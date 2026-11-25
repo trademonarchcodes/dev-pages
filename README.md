@@ -1,6 +1,6 @@
 # DEVPAGES
 
-DEVPAGES is a platform for discovering memorable digital names and managing website hosting through one customer-facing workspace.
+DEVPAGES is a platform whose primary launch offer is a free Cloudflare Pages subdomain (name.pages.dev), with optional paid custom-domain discovery and future website management.
 
 ## Repository status
 
@@ -42,3 +42,7 @@ The name checker supports .com, .net, .org and .io. For live availability and pr
 - Verify payment events server-side before changing subscription status.
 - Apply least-privilege permissions and audit administrator actions.
 - Never suspend or delete a site based only on an unverified browser-side payment status.
+
+## Primary offer: Pages.dev subdomains
+
+The primary advertised DEVPAGES offer is a `name.pages.dev` Cloudflare Pages subdomain, free during the launch promotion. This is not a separately registered domain and cannot be checked through RDAP or purchased from a registrar. Cloudflare Pages project names are globally unique; a suggested name is not reserved. The platform still needs a secure Cloudflare authorization and Pages project-provisioning workflow to verify availability and create customer projects. Optional `.com`, `.net`, `.org` and `.io` registrations are separate paid offerings and are not included in the Pages.dev promotion.
