@@ -57,9 +57,10 @@ form?.addEventListener("submit",async e=>{
 const sharedReviewApi="https://script.google.com/macros/s/AKfycbxDZFklxGHXDh-kNwVO10IeIMMLLLz99H_5K5dTsgVnuaO5Xd_OLJGX-w0Deryliy5nYA/exec";
 const header=document.querySelector(".topbar");
 if(header&&!document.getElementById("shared-rating-badge")){
+ const ratingRow=document.createElement("div");ratingRow.className="shared-rating-row";
  const badge=document.createElement("button");badge.type="button";badge.id="shared-rating-badge";badge.className="shared-rating-badge";
  badge.innerHTML='<span class="shared-rating-stars">★★★★★</span><span class="shared-rating-score">—</span><span class="shared-rating-meta">Loading reviews</span>';
- header.insertBefore(badge,header.querySelector(".nav")||null);
+ ratingRow.append(badge);header.insertAdjacentElement("afterend",ratingRow);
  badge.addEventListener("click",()=>document.getElementById("shared-review-dialog")?.showModal());
 }
 const dialog=document.createElement("dialog");dialog.id="shared-review-dialog";dialog.className="shared-review-dialog";
