@@ -52,3 +52,46 @@ form?.addEventListener("submit",async e=>{
  }catch(error){note.textContent=error.message||"Could not complete the lookup. Please try again."}
  finally{button.disabled=false}
 });
+
+
+const sharedReviewApi="https://script.google.com/macros/s/AKfycbxDZFklxGHXDh-kNwVO10IeIMMLLLz99H_5K5dTsgVnuaO5Xd_OLJGX-w0Deryliy5nYA/exec";
+const header=document.querySelector(".topbar");
+if(header&&!document.getElementById("shared-rating-badge")){
+ const badge=document.createElement("button");badge.type="button";badge.id="shared-rating-badge";badge.className="shared-rating-badge";
+ badge.innerHTML='<span class="shared-rating-stars">★★★★★</span><span class="shared-rating-score">—</span><span class="shared-rating-meta">Loading reviews</span>';
+ header.insertBefore(badge,header.querySelector(".nav")||null);
+ badge.addEventListener("click",()=>document.getElementById("shared-review-dialog")?.showModal());
+}
+const dialog=document.createElement("dialog");dialog.id="shared-review-dialog";dialog.className="shared-review-dialog";
+dialog.innerHTML='<div class="shared-review-shell"><button type="button" class="shared-review-close" aria-label="Close">×</button><p class="section-kicker">DEVLYON × DEVPAGES / SHARED REVIEWS</p><h2>How was your experience?</h2><p class="shared-review-copy">Your review appears on both DEVLYON and DEVPAGES.</p><form id="shared-review-form"><label for="shared-review-name">Your name</label><input id="shared-review-name" name="name" maxlength="60" required placeholder="Your name"><label>Your rating</label><div class="shared-review-stars" role="group" aria-label="Choose a star rating"><button type="button" data-star="1">★</button><button type="button" data-star="2">★</button><button type="button" data-star="3">★</button><button type="button" data-star="4">★</button><button type="button" data-star="5">★</button></div><input type="hidden" id="shared-review-rating"><label for="shared-review-text">Your review</label><textarea id="shared-review-text" name="review" rows="4" maxlength="800" required placeholder="Tell us about your experience..."></textarea><input name="website" class="shared-review-honeypot" tabindex="-1" autocomplete="off"><button class="button primary" id="shared-review-submit" type="submit">Submit review ↗</button><p id="shared-review-status" role="status">One review is shared across both websites.</p></form></div>';
+document.body.append(dialog);
+dialog.querySelector(".shared-review-close").addEventListener("click",()=>dialog.close());
+dialog.addEventListener("click",e=>{if(e.target===dialog)dialog.close()});
+let selectedSharedRating=0;
+dialog.querySelectorAll("[data-star]").forEach(btn=>btn.addEventListener("click",()=>{selectedSharedRating=Number(btn.dataset.star);dialog.querySelectorAll("[data-star]").forEach(s=>s.classList.toggle("selected",Number(s.dataset.star)<=selectedSharedRating))}));
+function loadSharedRating(){
+ const callback="devpagesSharedRatingLoaded";
+ window[callback]=data=>{
+  const list=Array.isArray(data?.reviews)?data.reviews:[],count=list.length,avg=count?list.reduce((sum,r)=>sum+Number(r.rating||0),0)/count:0;
+  const badge=document.getElementById("shared-rating-badge");
+  if(badge){badge.querySelector(".shared-rating-stars").textContent="★".repeat(Math.round(avg))+"☆".repeat(5-Math.round(avg));badge.querySelector(".shared-rating-score").textContent=count?avg.toFixed(1)+"/5":"—";badge.querySelector(".shared-rating-meta").textContent=count?count+" shared reviews":"Be the first to review";}
+  delete window[callback];
+ };
+ const feed=document.createElement("script");feed.src=sharedReviewApi+"?action=list&callback="+callback+"&_="+Date.now();feed.onerror=()=>{const m=document.querySelector(".shared-rating-meta");if(m)m.textContent="Reviews";};document.head.append(feed);
+}
+loadSharedRating();
+const sharedForm=document.getElementById("shared-review-form");
+sharedForm.addEventListener("submit",e=>{
+ e.preventDefault();const status=document.getElementById("shared-review-status"),submit=document.getElementById("shared-review-submit");
+ if(!selectedSharedRating){status.textContent="Please choose a star rating.";return;}
+ if(!sharedForm.reportValidity())return;
+ const data=new FormData(sharedForm);if(String(data.get("website")||"").trim())return;
+ const frame=document.createElement("iframe");frame.name="devpages-review-post";frame.hidden=true;document.body.append(frame);
+ const post=document.createElement("form");post.method="POST";post.action=sharedReviewApi;post.target=frame.name;post.hidden=true;
+ [["action","add"],["name",data.get("name")],["rating",selectedSharedRating],["review",data.get("review")],["website",""]].forEach(([k,v])=>{const x=document.createElement("input");x.name=k;x.value=String(v||"");post.append(x)});
+ document.body.append(post);submit.disabled=true;status.textContent="Submitting your review...";
+ const done=event=>{if(event.data?.type!=="devlyon-review-submitted")return;window.removeEventListener("message",done);submit.disabled=false;status.textContent=event.data.ok?"Thank you! Your review is now shared on both websites.":"We couldn't submit your review. Please try again.";if(event.data.ok){sharedForm.reset();selectedSharedRating=0;dialog.close();loadSharedRating()}post.remove();frame.remove()};
+ window.addEventListener("message",done);post.submit();
+ setTimeout(()=>{if(submit.disabled){submit.disabled=false;status.textContent="Submission may still be processing. Please check the reviews page shortly.";post.remove();frame.remove()}},12000);
+});
+try{const key="shared-review-prompt-dismissed-until";if(Number(localStorage.getItem(key)||0)<Date.now())setTimeout(()=>{if(!dialog.open){dialog.showModal();localStorage.setItem(key,String(Date.now()+7*24*60*60*1000))}},18000)}catch(_){}
