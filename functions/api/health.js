@@ -1,13 +1,22 @@
-export async function onRequest() {
+export async function onRequest({ env }) {
+  let database = false;
+  if (env.DEVPAGES_DB) {
+    try { await env.DEVPAGES_DB.prepare("SELECT 1 AS ok").first(); database = true; } catch {}
+  }
+  const emailConfigured = Boolean(env.CF_ACCOUNT_ID && env.CF_EMAIL_API_TOKEN && env.EMAIL_FROM);
+  const cryptoConfigured = Boolean(env.AUTH_PEPPER && env.SESSION_SECRET);
   return Response.json({
     ok: true,
     service: "DEVPAGES",
-    status: "foundation",
-    message: "DEVPAGES API foundation is online. Customer services are not activated yet."
-  }, {
-    headers: {
-      "Cache-Control": "no-store",
-      "X-Content-Type-Options": "nosniff"
+    status: database && emailConfigured && cryptoConfigured ? "account-ready-pending-provider-integrations" : "foundation",
+    capabilities: {
+      database,
+      emailDeliveryConfigured: emailConfigured,
+      sessionSecurityConfigured: cryptoConfigured,
+      customerSignInReady: database && emailConfigured && cryptoConfigured,
+      cloudflareCustomerOAuthReady: false,
+      registrarCheckoutReady: false,
+      paystackReady: false
     }
-  });
+  }, { headers: { "Cache-Control":"no-store", "X-Content-Type-Options":"nosniff" } });
 }
