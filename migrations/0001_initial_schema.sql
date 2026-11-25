@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS auth_challenges (
   expires_at TEXT NOT NULL,
   consumed_at TEXT,
   attempts INTEGER NOT NULL DEFAULT 0,
+  ip_hash TEXT,
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE TABLE IF NOT EXISTS auth_sessions (
@@ -115,3 +116,5 @@ CREATE TABLE IF NOT EXISTS domain_orders (
 CREATE INDEX IF NOT EXISTS idx_auth_challenges_email_expiry ON auth_challenges(email, expires_at);
 CREATE INDEX IF NOT EXISTS idx_auth_sessions_user ON auth_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_domain_orders_user ON domain_orders(user_id, created_at);
+
+CREATE INDEX IF NOT EXISTS idx_auth_challenges_ip_expiry ON auth_challenges(ip_hash, created_at);
