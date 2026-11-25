@@ -59,7 +59,7 @@ const header=document.querySelector(".topbar");
 if(header&&!document.getElementById("shared-rating-badge")){
  const ratingRow=document.createElement("div");ratingRow.className="shared-rating-row";
  const badge=document.createElement("button");badge.type="button";badge.id="shared-rating-badge";badge.className="shared-rating-badge";
- badge.innerHTML='<span class="shared-rating-stars">★★★★★</span><span class="shared-rating-score">—</span><span class="shared-rating-meta">Loading reviews</span>';
+ badge.innerHTML='<span class="shared-rating-stars">★★★★★</span><span class="shared-rating-score">Loading…</span><span class="shared-rating-meta">Shared customer rating</span>';
  ratingRow.append(badge);header.insertAdjacentElement("afterend",ratingRow);
  badge.addEventListener("click",()=>document.getElementById("shared-review-dialog")?.showModal());
 }
@@ -71,14 +71,15 @@ dialog.addEventListener("click",e=>{if(e.target===dialog)dialog.close()});
 let selectedSharedRating=0;
 dialog.querySelectorAll("[data-star]").forEach(btn=>btn.addEventListener("click",()=>{selectedSharedRating=Number(btn.dataset.star);dialog.querySelectorAll("[data-star]").forEach(s=>s.classList.toggle("selected",Number(s.dataset.star)<=selectedSharedRating))}));
 function loadSharedRating(){
- const callback="devpagesSharedRatingLoaded";
- window[callback]=data=>{
+ const cacheKey="devpages-shared-rating-v1",badge=document.getElementById("shared-rating-badge");
+ const paint=data=>{
   const list=Array.isArray(data?.reviews)?data.reviews:[],count=list.length,avg=count?list.reduce((sum,r)=>sum+Number(r.rating||0),0)/count:0;
-  const badge=document.getElementById("shared-rating-badge");
   if(badge){badge.querySelector(".shared-rating-stars").textContent="★".repeat(Math.round(avg))+"☆".repeat(5-Math.round(avg));badge.querySelector(".shared-rating-score").textContent=count?avg.toFixed(1)+"/5":"—";badge.querySelector(".shared-rating-meta").textContent=count?count+" shared reviews":"Be the first to review";}
-  delete window[callback];
  };
- const feed=document.createElement("script");feed.src=sharedReviewApi+"?action=list&callback="+callback+"&_="+Date.now();feed.onerror=()=>{const m=document.querySelector(".shared-rating-meta");if(m)m.textContent="Reviews";};document.head.append(feed);
+ try{const cached=JSON.parse(localStorage.getItem(cacheKey)||"null");if(cached?.savedAt&&Date.now()-cached.savedAt<15*60*1000)paint(cached.data);}catch(_){}
+ const callback="devpagesSharedRatingLoaded";
+ window[callback]=data=>{paint(data);try{localStorage.setItem(cacheKey,JSON.stringify({savedAt:Date.now(),data}));}catch(_){}delete window[callback];};
+ const feed=document.createElement("script");feed.async=true;feed.src=sharedReviewApi+"?action=list&callback="+callback;feed.onerror=()=>{const m=document.querySelector(".shared-rating-meta");if(m)m.textContent="Shared customer rating";};document.head.append(feed);
 }
 loadSharedRating();
 function loadSharedReviewList(){
