@@ -24,7 +24,7 @@ function renderResults(items,registrarConnected){
   const card=document.createElement("article");card.className="domain-result";
   const name=document.createElement("strong");name.textContent=item.domain;
   const status=document.createElement("span");status.className="domain-status "+(item.status==="available"?"available":item.status==="registered"?"taken":"unknown");
-  status.textContent=item.status==="available"?"Available to register":item.status==="registered"?"Registered":item.status==="unsupported"?"Not supported":"Needs registrar confirmation";
+  status.textContent=item.status==="available"?"Available — unconfirmed price":item.status==="registered"?"Registered":item.status==="unsupported"?"Not supported":"Unconfirmed";
   const detail=document.createElement("small");
   if(item.status==="available"&&item.customerPrice!==null&&item.customerPrice!==undefined){
    const renewal=item.customerRenewalEstimate!==null&&item.customerRenewalEstimate!==undefined?` · renewal estimate $${item.customerRenewalEstimate.toFixed(2)}`:"";
@@ -34,7 +34,7 @@ function renderResults(items,registrarConnected){
   }else if(item.status==="registered"){
    detail.textContent="The registrar reports that this name cannot currently be registered.";
   }else{
-   detail.textContent=registrarConnected?"This extension or name could not be confirmed by the registrar.":"RDAP is only an indicative lookup. Connect the registrar for live availability and pricing.";
+   detail.textContent=registrarConnected?"This extension or name could not be confirmed by the registrar.":"No definitive availability result. RDAP is indicative only; registrar confirmation and live pricing are not connected yet.";
   }
   card.append(name,status,detail);results.append(card);
  }
@@ -48,7 +48,7 @@ form?.addEventListener("submit",async e=>{
   const response=await fetch("/api/domain-check",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({domains})});
   const data=await response.json();if(!response.ok)throw new Error(data.error||"Lookup is temporarily unavailable.");
   renderResults(data.results||[],data.registrarConnected);
-  note.textContent=data.registrarConnected?`Live registrar results for “${value}”. DEVPAGES adds $3 to the registrar's price.`:`Indicative results for “${value}”. Live registrar pricing is not connected yet; RDAP does not guarantee availability.`;
+  note.textContent=data.registrarConnected?`Live registrar results for “${value}”. DEVPAGES adds $3 to the registrar's price.`:`Indicative results for “${value}”. These results do not confirm availability or reserve a domain.`;
  }catch(error){note.textContent=error.message||"Could not complete the lookup. Please try again."}
  finally{button.disabled=false}
 });
