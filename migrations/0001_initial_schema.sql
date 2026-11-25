@@ -1,4 +1,4 @@
--- DEV PAGES initial data model.
+-- DEVPAGES initial data model.
 -- Apply only after the D1 database and production bindings are configured.
 
 CREATE TABLE IF NOT EXISTS users (
