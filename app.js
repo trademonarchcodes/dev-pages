@@ -80,6 +80,33 @@ function loadSharedRating(){
  const feed=document.createElement("script");feed.src=sharedReviewApi+"?action=list&callback="+callback+"&_="+Date.now();feed.onerror=()=>{const m=document.querySelector(".shared-rating-meta");if(m)m.textContent="Reviews";};document.head.append(feed);
 }
 loadSharedRating();
+function loadSharedReviewList(){
+ const listNode=document.getElementById("shared-reviews-list");if(!listNode)return;
+ const callback="devpagesSharedReviewsLoaded";
+ window[callback]=data=>{
+  const reviews=Array.isArray(data?.reviews)?data.reviews:[];
+  const count=reviews.length,avg=count?reviews.reduce((sum,r)=>sum+Number(r.rating||0),0)/count:0;
+  const avgNode=document.getElementById("shared-reviews-average"),starsNode=document.getElementById("shared-reviews-stars"),countNode=document.getElementById("shared-reviews-count");
+  if(avgNode)avgNode.textContent=count?avg.toFixed(1)+"/5":"—";
+  if(starsNode)starsNode.textContent="★".repeat(Math.round(avg))+"☆".repeat(5-Math.round(avg));
+  if(countNode)countNode.textContent=count+" shared public reviews";
+  listNode.replaceChildren();
+  if(!count){const p=document.createElement("p");p.textContent="No reviews have been submitted yet.";listNode.append(p);return;}
+  reviews.slice().reverse().forEach(item=>{
+   const card=document.createElement("article");card.className="shared-public-review";
+   const top=document.createElement("div");top.className="shared-public-review-top";
+   const name=document.createElement("strong");name.textContent=item.name||"Customer";
+   const rating=document.createElement("span");rating.className="shared-rating-stars";rating.textContent="★".repeat(Number(item.rating||0))+"☆".repeat(5-Number(item.rating||0));
+   const body=document.createElement("p");body.textContent=item.review||"";
+   const date=document.createElement("small");date.textContent=item.date||"";
+   top.append(name,rating);card.append(top,body,date);listNode.append(card);
+  });
+  delete window[callback];
+ };
+ const feed=document.createElement("script");feed.src=sharedReviewApi+"?action=list&callback="+callback+"&_="+Date.now();feed.onerror=()=>{listNode.textContent="Reviews could not load right now. Please refresh.";};document.head.append(feed);
+}
+loadSharedReviewList();
+document.getElementById("open-shared-review")?.addEventListener("click",()=>dialog.showModal());
 const sharedForm=document.getElementById("shared-review-form");
 sharedForm.addEventListener("submit",e=>{
  e.preventDefault();const status=document.getElementById("shared-review-status"),submit=document.getElementById("shared-review-submit");
