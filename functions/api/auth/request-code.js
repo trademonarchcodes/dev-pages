@@ -7,13 +7,18 @@ export async function onRequestPost({ request, env }) {
   try { body = await request.json(); } catch { return reply({ ok:false, message:"Enter a valid email address." }, 400); }
   const email = String(body.email || "").trim().toLowerCase();
   if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return reply({ ok:false, message:"Enter a valid email address." }, 400);
-  const recent = await env.DEVPAGES_DB.prepare("SELECT COUNT(*) AS n FROM auth_challenges WHERE email=? AND created_at > datetime('now','-15 minutes')").bind(email).first();
-  if ((recent?.n || 0) >= 3) return reply({ ok:false, message:"Too many attempts. Please try again in 15 minutes." }, 429);
+  const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+  const ipHash = await hmac(ip, env.AUTH_PEPPER);
+  const [recent, fromIp] = await Promise.all([
+    env.DEVPAGES_DB.prepare("SELECT COUNT(*) AS n FROM auth_challenges WHERE email=? AND created_at > datetime('now','-15 minutes')").bind(email).first(),
+    env.DEVPAGES_DB.prepare("SELECT COUNT(*) AS n FROM auth_challenges WHERE ip_hash=? AND created_at > datetime('now','-15 minutes')").bind(ipHash).first()
+  ]);
+  if ((recent?.n || 0) >= 3 || (fromIp?.n || 0) >= 10) return reply({ ok:false, message:"Too many attempts. Please try again later." }, 429);
   const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, "0");
   const id = crypto.randomUUID();
   const codeHash = await hmac(email + ":" + code, env.AUTH_PEPPER);
-  await env.DEVPAGES_DB.prepare("INSERT INTO auth_challenges (id,email,code_hash,expires_at) VALUES (?,?,?,?)")
-    .bind(id, email, codeHash, new Date(Date.now() + 10 * 60 * 1000).toISOString()).run();
+  await env.DEVPAGES_DB.prepare("INSERT INTO auth_challenges (id,email,code_hash,expires_at,ip_hash) VALUES (?,?,?,?,?)")
+    .bind(id, email, codeHash, new Date(Date.now() + 10 * 60 * 1000).toISOString(), ipHash).run();
   const response = await fetch("https://api.cloudflare.com/client/v4/accounts/" + encodeURIComponent(env.CF_ACCOUNT_ID) + "/email/sending/send", {
     method:"POST",
     headers:{ "Authorization":"Bearer " + env.CF_EMAIL_API_TOKEN, "Content-Type":"application/json" },
