@@ -42,12 +42,12 @@ function renderResults(items,registrarConnected){
 form?.addEventListener("submit",async e=>{
  e.preventDefault();const value=input.value.trim(),base=slugify(value);results.replaceChildren();
  if(!base){note.textContent="Enter a name using letters or numbers to begin.";return;}
- const domains=suggestNames(value);note.textContent="Generating brand ideas and checking .com, .net, .org and .io…";
+ const pagesName=base+".pages.dev";const pagesCard=document.createElement("article");pagesCard.className="domain-result pages-domain-result";const pagesTitle=document.createElement("strong");pagesTitle.textContent=pagesName;const pagesStatus=document.createElement("span");pagesStatus.className="domain-status unknown";pagesStatus.textContent="Suggested Pages.dev name";const pagesDetail=document.createElement("small");pagesDetail.textContent="Main DEVPAGES offer. Cloudflare Pages must confirm the project name before creation; this suggestion does not reserve it.";pagesCard.append(pagesTitle,pagesStatus,pagesDetail);results.append(pagesCard);const domains=suggestNames(value);note.textContent="Your featured address is "+pagesName+". Checking optional .com, .net, .org and .io alternatives…";
  const button=form.querySelector("button");button.disabled=true;
  try{
   const response=await fetch("/api/domain-check",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({domains})});
   const data=await response.json();if(!response.ok)throw new Error(data.error||"Lookup is temporarily unavailable.");
-  renderResults(data.results||[],data.registrarConnected);
+  const secondaryTitle=document.createElement("div");secondaryTitle.className="section-kicker";secondaryTitle.textContent="OPTIONAL CUSTOM DOMAIN IDEAS";results.append(secondaryTitle);renderResults(data.results||[],data.registrarConnected);
   note.textContent=data.registrarConnected?`Live registrar results for “${value}”. DEVPAGES adds $3 to the registrar's price.`:`Indicative results for “${value}”. These results do not confirm availability or reserve a domain.`;
  }catch(error){note.textContent=error.message||"Could not complete the lookup. Please try again."}
  finally{button.disabled=false}
