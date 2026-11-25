@@ -1,6 +1,6 @@
-# DEV PAGES
+# DEVPAGES
 
-DEV PAGES is a platform for discovering memorable digital names and managing website hosting through one customer-facing workspace.
+DEVPAGES is a platform for discovering memorable digital names and managing website hosting through one customer-facing workspace.
 
 ## Repository status
 
@@ -28,7 +28,9 @@ The initial foundation has been committed:
 
 The landing page is static HTML, CSS and JavaScript. The health endpoint uses the Cloudflare Pages Functions convention. Deploy from the main branch with the repository root as the build output directory and no build command.
 
-Before production deployment, create and bind the D1 database, apply the SQL migration, configure required secrets and test all authentication, payment and hosting flows.
+Production deployment is currently available at https://devpagesdomain.pages.dev.
+
+Before production use, create and bind the D1 database, apply the SQL migration, configure required secrets and test all authentication, payment and hosting flows.
 
 ## Security rules
 
