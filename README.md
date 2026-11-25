@@ -8,14 +8,14 @@ The initial foundation has been committed:
 - Responsive landing page with a dark electric-blue visual system
 - Mobile navigation and launch countdown
 - Pricing presentation for the announced launch offer
-- Early-stage name-search interface clearly marked as not yet connected
+- Client-side brand-name suggestions with a server-side RDAP registration-record lookup for supported TLDs
 - Pages Function health endpoint
 - Initial D1 relational schema for users, hosting connections, sites, subscriptions, payments and audit events
 
 ## Production features still to implement and verify
 
 - Secure customer registration, login and email verification
-- Live domain-name suggestions and availability checks
+- Registrar-grade availability confirmation and domain registration/checkout
 - Cloudflare OAuth application registration and customer consent flow
 - Secure token encryption, rotation and revocation
 - Customer-owned Cloudflare Pages project creation and deployment
@@ -28,9 +28,9 @@ The initial foundation has been committed:
 
 The landing page is static HTML, CSS and JavaScript. The health endpoint uses the Cloudflare Pages Functions convention. Deploy from the main branch with the repository root as the build output directory and no build command.
 
-Production deployment is currently available at https://devpagesdomain.pages.dev.
+Production deployment target: https://devpagesdomain.pages.dev. Verify the latest Cloudflare deployment after each main-branch commit.
 
-Before production use, create and bind the D1 database, apply the SQL migration, configure required secrets and test all authentication, payment and hosting flows.
+The name checker uses public RDAP registration data via the IANA DNS bootstrap registry. A missing RDAP record is only an indication that a name may be unregistered; it is not a registrar reservation or purchase guarantee. Registrar-grade availability, pricing and registration checkout still require a registrar integration. Before production use, create and bind the D1 database, apply the SQL migration, configure required secrets and test all authentication, payment and hosting flows.
 
 ## Security rules
 
