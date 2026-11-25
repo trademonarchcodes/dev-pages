@@ -17,8 +17,8 @@ async function checkWithCloudflare(domain, env) {
   const item = payload?.result?.domains?.find(entry => entry.name?.toLowerCase() === domain);
   if (!item) return { domain, status: "unknown", reason: "no_result" };
   const price = item.pricing || {};
-  const registrationCost = Number(price.registration_cost);
-  const renewalCost = Number(price.renewal_cost);
+  const registrationCost = price.registration_cost == null ? NaN : Number(price.registration_cost);
+  const renewalCost = price.renewal_cost == null ? NaN : Number(price.renewal_cost);
   return {
     domain,
     status: item.registrable === true ? "available" : item.reason === "domain_unavailable" ? "registered" : "unsupported",
