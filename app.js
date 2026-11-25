@@ -11,44 +11,44 @@ const year=document.getElementById("year");if(year)year.textContent=new Date().g
 const menu=document.querySelector(".menu-toggle"),nav=document.querySelector(".nav");
 menu?.addEventListener("click",()=>{const open=nav.classList.toggle("open");menu.setAttribute("aria-expanded",String(open))});
 nav?.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>{nav.classList.remove("open");menu?.setAttribute("aria-expanded","false")}));
-
-const form=document.getElementById("name-form");
-const input=document.getElementById("name-input");
-const note=document.getElementById("search-note");
-const results=document.getElementById("domain-results");
-const extensions=[".com",".net",".org",".co",".io",".dev",".app"];
+const form=document.getElementById("name-form"),input=document.getElementById("name-input"),note=document.getElementById("search-note"),results=document.getElementById("domain-results");
+const extensions=[".com",".net",".org",".io"];
 function slugify(value){return value.toLowerCase().trim().replace(/^https?:\/\//,"").replace(/\s+/g,"").replace(/\.[a-z]{2,}$/i,"").replace(/[^a-z0-9-]/g,"").replace(/-+/g,"-").replace(/^-|-$/g,"").slice(0,40)}
 function suggestNames(value){
- const base=slugify(value);
- if(!base)return [];
- const candidates=[base,...["get","try","use","join","go","my"].map(p=>p+base),...["hq","hub","online","studio","works","world"].map(s=>base+s)];
- return [...new Set(candidates)].slice(0,8).map((name,i)=>name+extensions[i%extensions.length]);
+ const base=slugify(value);if(!base)return [];
+ return [...new Set([...extensions.map(ext=>base+ext),`get${base}.com`,`try${base}.com`,`${base}hq.com`,`${base}hub.com`])].slice(0,8);
 }
-function renderResults(items){
+function renderResults(items,registrarConnected){
  results.replaceChildren();
  for(const item of items){
   const card=document.createElement("article");card.className="domain-result";
   const name=document.createElement("strong");name.textContent=item.domain;
-  const status=document.createElement("span");status.className="domain-status "+(item.status==="not_found"?"available":item.status==="registered"?"taken":"unknown");
-  status.textContent=item.status==="not_found"?"No record found — may be available":item.status==="registered"?"Registered":"Could not verify";
-  const detail=document.createElement("small");detail.textContent=item.status==="not_found"?"Confirm final availability and price with a registrar before purchase.":item.status==="registered"?"This name has a registration record.":"The registry did not return a reliable result. Try again later.";
+  const status=document.createElement("span");status.className="domain-status "+(item.status==="available"?"available":item.status==="registered"?"taken":"unknown");
+  status.textContent=item.status==="available"?"Available to register":item.status==="registered"?"Registered":item.status==="unsupported"?"Not supported":"Needs registrar confirmation";
+  const detail=document.createElement("small");
+  if(item.status==="available"&&item.customerPrice!==null&&item.customerPrice!==undefined){
+   const renewal=item.customerRenewalEstimate!==null&&item.customerRenewalEstimate!==undefined?` · renewal estimate $${item.customerRenewalEstimate.toFixed(2)}`:"";
+   detail.textContent=`First year $${item.customerPrice.toFixed(2)} (includes $3 DEVPAGES fee)${renewal}. Final price is checked again at checkout.`;
+  }else if(item.status==="available"){
+   detail.textContent="A registry record was not found. Connect the registrar for confirmed availability and live pricing.";
+  }else if(item.status==="registered"){
+   detail.textContent="The registrar reports that this name cannot currently be registered.";
+  }else{
+   detail.textContent=registrarConnected?"This extension or name could not be confirmed by the registrar.":"RDAP is only an indicative lookup. Connect the registrar for live availability and pricing.";
+  }
   card.append(name,status,detail);results.append(card);
  }
 }
 form?.addEventListener("submit",async e=>{
- e.preventDefault();
- const value=input.value.trim(),base=slugify(value);
- results.replaceChildren();
+ e.preventDefault();const value=input.value.trim(),base=slugify(value);results.replaceChildren();
  if(!base){note.textContent="Enter a name using letters or numbers to begin.";return;}
- const domains=suggestNames(value);
- note.textContent="Generating brand ideas and checking registry records…";
- form.querySelector("button").disabled=true;
+ const domains=suggestNames(value);note.textContent="Generating brand ideas and checking .com, .net, .org and .io…";
+ const button=form.querySelector("button");button.disabled=true;
  try{
   const response=await fetch("/api/domain-check",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({domains})});
-  const data=await response.json();
-  if(!response.ok)throw new Error(data.error||"Lookup is temporarily unavailable.");
-  renderResults(data.results||[]);
-  note.textContent="Results for “"+value+"”. RDAP checks registration records, not guaranteed purchasability; confirm with a registrar.";
+  const data=await response.json();if(!response.ok)throw new Error(data.error||"Lookup is temporarily unavailable.");
+  renderResults(data.results||[],data.registrarConnected);
+  note.textContent=data.registrarConnected?`Live registrar results for “${value}”. DEVPAGES adds $3 to the registrar's price.`:`Indicative results for “${value}”. Live registrar pricing is not connected yet; RDAP does not guarantee availability.`;
  }catch(error){note.textContent=error.message||"Could not complete the lookup. Please try again."}
- finally{form.querySelector("button").disabled=false}
+ finally{button.disabled=false}
 });
