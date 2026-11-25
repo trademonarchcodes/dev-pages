@@ -16,3 +16,17 @@
 @media(max-width:900px){.shared-rating-badge{order:3;margin:0 0 0 auto;padding:7px 9px;gap:5px}.shared-rating-meta{display:none}.topbar{flex-wrap:wrap}.nav{order:4}.shared-rating-score{font-size:12px}.shared-rating-stars{font-size:14px}}
 
 .shared-review-page-summary{display:flex;align-items:center;gap:14px;margin:26px 0 18px;flex-wrap:wrap}.shared-review-page-summary strong{font-size:32px}.shared-review-page-summary small{color:var(--muted);font:11px var(--mono)}.shared-reviews-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:30px 0 70px}.shared-public-review{border:1px solid var(--line);background:#101a2a;padding:22px;border-radius:8px}.shared-public-review-top{display:flex;justify-content:space-between;align-items:center;gap:10px}.shared-public-review-top strong{font-size:15px}.shared-public-review p{color:var(--muted);font-size:14px;line-height:1.7;white-space:pre-wrap}.shared-public-review small{color:#75849a;font:10px var(--mono)}.topbar .nav a[aria-current=page]{color:#fff}@media(max-width:650px){.shared-reviews-list{grid-template-columns:1fr}}
+
+/* Shared reputation strip: keep navigation in its own header row. */
+.shared-rating-row{width:100%;display:flex;justify-content:center;align-items:center;padding:17px 20px 19px;background:linear-gradient(180deg,rgba(12,22,38,.96),rgba(7,11,20,.98));border-bottom:1px solid rgba(110,150,205,.2);position:relative;z-index:4}
+.shared-rating-row .shared-rating-badge{display:flex;align-items:center;justify-content:center;gap:14px;margin:0;padding:0;border:0;background:transparent;white-space:normal}
+.shared-rating-row .shared-rating-stars{font-size:clamp(27px,4vw,38px);line-height:1;letter-spacing:4px;color:#00b67a;text-shadow:0 0 18px rgba(0,182,122,.16)}
+.shared-rating-row .shared-rating-score{font-size:clamp(22px,3vw,29px);font-weight:800;letter-spacing:-.04em}
+.shared-rating-row .shared-rating-meta{display:block;font-size:11px;letter-spacing:.04em;color:#aab4c3}
+@media(max-width:700px){
+ .shared-rating-row{padding:17px 14px 19px}
+ .shared-rating-row .shared-rating-badge{gap:10px;flex-wrap:wrap}
+ .shared-rating-row .shared-rating-stars{font-size:31px;letter-spacing:3px}
+ .shared-rating-row .shared-rating-score{font-size:24px}
+ .shared-rating-row .shared-rating-meta{width:100%;text-align:center;font-size:10px}
+}
