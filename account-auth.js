@@ -286,9 +286,21 @@ async function loadBillingStatus(user) {
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || "Billing details unavailable.");
     const money = (value) => "₦" + Number(value).toLocaleString("en-NG");
-    summary.textContent = payload.account.promo_eligible && payload.promotion.active
-      ? "Launch promotion active until 16 January 2027. Each eligible domain has its own countdown."
-      : "Per domain: " + money(payload.pricing.setup_ngn) + " setup + " + money(payload.pricing.renewal_ngn) + " every 30 days.";
+    const domainForm = $("domain-create-form");
+    const connectButton = $("cloudflare-connect-button");
+    if (domainForm) {
+      for (const control of domainForm.elements) control.disabled = !payload.account.hosting_connected;
+      domainForm.style.opacity = payload.account.hosting_connected ? "1" : ".45";
+    }
+    if (connectButton) {
+      connectButton.textContent = payload.account.hosting_connected ? "Cloudflare account connected ✓" : "Connect my Cloudflare account →";
+      connectButton.disabled = Boolean(payload.account.hosting_connected);
+    }
+    summary.textContent = !payload.account.hosting_connected
+      ? "Hosting is locked. Connect your Cloudflare account above to unlock domain creation and website publishing."
+      : payload.account.promo_eligible && payload.promotion.active
+        ? "Launch promotion active until 16 January 2027. Each eligible domain has its own countdown."
+        : "Per domain: " + money(payload.pricing.setup_ngn) + " setup + " + money(payload.pricing.renewal_ngn) + " every 30 days.";
     list.replaceChildren();
     if (!payload.domains.length) {
       const empty = document.createElement("p"); empty.textContent = "No domains yet. Add your first domain above."; list.append(empty);
