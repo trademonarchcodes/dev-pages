@@ -21,11 +21,10 @@ export async function onRequestPost({ request, env }) {
   if (!validOrigin(request)) return reply({ok:false,message:"Request could not be verified. Refresh and try again."},403);
   const user = await currentUser(request, env);
   if (!user) return reply({ok:false,message:"Please sign in to your DEVPAGES account first."},401);
-  if (!env.TOKEN_ENCRYPTION_KEY) return reply({ok:false,message:"Secure connection setup is not finished yet. Please try again later."},503);
-  const length = Number(request.headers.get("Content-Length") || 0);
-  if (length > 12000) return reply({ok:false,message:"The submitted information is too large."},413);
-  let body;
-  try { body = await request.json(); } catch { return reply({ok:false,message:"Please check the submitted details."},400); }
+  if (!/^[a-f0-9]{64}$/i.test(env.TOKEN_ENCRYPTION_KEY || "")) return reply({ok:false,message:"Secure connection setup is not finished yet. Please try again later."},503);
+  let raw, body;
+  try { raw = await request.text(); if (raw.length > 12000) return reply({ok:false,message:"The submitted information is too large."},413); body = JSON.parse(raw); }
+  catch { return reply({ok:false,message:"Please check the submitted details."},400); }
   const accountId = String(body.accountId || "").trim();
   const token = String(body.apiToken || "").trim();
   if (!/^[a-f0-9]{32}$/i.test(accountId)) return reply({ok:false,message:"Enter the 32-character Cloudflare Account ID."},400);
