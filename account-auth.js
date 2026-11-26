@@ -23,6 +23,26 @@ async function refresh(){
     render("domains-list",x.domains,"",v=>({title:v.domain_name,detail:v.currency+" · "+(v.registration_price_minor==null?"Price pending":((v.registration_price_minor+v.markup_minor)/100).toFixed(2)),status:v.status}));
     render("payments-list",x.payments,"",v=>({title:v.provider+" payment",detail:v.currency+" "+(v.amount_minor/100).toFixed(2),status:v.status}));
     render("activity-list",x.activity,"",v=>({title:v.event_type.replaceAll("_"," "),detail:new Date(v.created_at+"Z").toLocaleString(),status:"Activity"}));
+    const hostingBox=document.getElementById("hosting-connections-list");
+    if(hostingBox){
+      hostingBox.replaceChildren();
+      if(x.hostingConnections && x.hostingConnections.length){
+        x.hostingConnections.forEach(item=>{
+          const row=document.createElement("div");row.className="account-data-row";
+          const left=document.createElement("div");const strong=document.createElement("strong");strong.textContent="Cloudflare account";
+          const small=document.createElement("small");small.textContent="Account ID: "+item.provider_account_id;left.append(strong,small);
+          const status=document.createElement("span");status.textContent="Connected";row.append(left,status);hostingBox.append(row);
+        });
+        const intro=document.getElementById("hosting-empty-copy");if(intro)intro.hidden=true;
+      }else{
+        const empty=document.createElement("div");empty.className="empty-state";
+        const symbol=document.createElement("span");symbol.textContent="◎";
+        const heading=document.createElement("strong");heading.textContent="No hosting account connected";
+        const copy=document.createElement("small");copy.textContent="Connect your own Cloudflare account to prepare for Pages hosting.";
+        const link=document.createElement("a");link.className="text-link";link.href="/connect-hosting.html";link.textContent="Connect hosting →";
+        empty.append(symbol,heading,copy,link);hostingBox.append(empty);
+      }
+    }
    }
   }
  }catch(e){note("Unable to check account status. Please refresh.",true);}
