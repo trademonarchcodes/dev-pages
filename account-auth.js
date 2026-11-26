@@ -342,6 +342,7 @@ async function loadBillingStatus(user) {
             const JSZip = (await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm")).default;
             const zip = await JSZip.loadAsync(archive);
             const files = [];
+            let totalBytes = 0;
             for (const [path, entry] of Object.entries(zip.files)) {
               const parts = path.split("/");
               if (entry.dir || path.startsWith("__MACOSX/") || path.endsWith(".DS_Store") || parts.some(part => [".git","node_modules",".wrangler","__MACOSX"].includes(part))) continue;
@@ -349,6 +350,8 @@ async function loadBillingStatus(user) {
               if (path === "_worker.js" || path === "_worker.bundle" || path === "functions" || path.startsWith("functions/")) throw new Error("This ZIP contains a custom Worker or Pages Functions. DEVPAGES ZIP publishing currently supports static websites only.");
               const blob = await entry.async("blob");
               if (blob.size > 8 * 1024 * 1024) throw new Error("A website file is larger than 8 MB.");
+              totalBytes += blob.size;
+              if (totalBytes > 13 * 1024 * 1024) throw new Error("Your website files exceed the 13 MB total upload limit.");
               const base64 = await new Promise((resolve,reject) => {
                 const reader = new FileReader(); reader.onload=()=>resolve(String(reader.result).split(",")[1]); reader.onerror=reject; reader.readAsDataURL(blob);
               });
