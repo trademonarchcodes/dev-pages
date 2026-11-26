@@ -221,6 +221,32 @@ if (resetForm) {
   });
 }
 
+const cloudflareConnect = $("cloudflare-connect-button");
+if (cloudflareConnect) {
+  const params = new URLSearchParams(location.search);
+  const status = params.get("cloudflare");
+  if (status === "connected") showMessage("Cloudflare account connected. Your authorization is saved securely.");
+  else if (status === "cancelled") showMessage("Cloudflare authorization was cancelled.", "error");
+  else if (status === "failed") showMessage("Cloudflare connection could not be completed. Check the setup and try again.", "error");
+  if (status) history.replaceState({}, "", "/account.html");
+  cloudflareConnect.addEventListener("click", async () => {
+    setBusy(cloudflareConnect, true, "Connecting…");
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error || !data.session?.access_token) throw new Error("Please sign in again before connecting Cloudflare.");
+      const response = await fetch("/api/cloudflare/connect", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + data.session.access_token, "Content-Type": "application/json" }
+      });
+      const result = await response.json();
+      if (!response.ok || !result.authorization_url) throw new Error(result.error || "Unable to start Cloudflare authorization.");
+      location.assign(result.authorization_url);
+    } catch (error) {
+      showMessage(friendlyError(error), "error");
+      setBusy(cloudflareConnect, false);
+    }
+  });
+}
 const signout = $("signout-button");
 if (signout) {
   signout.addEventListener("click", async () => {
