@@ -19,7 +19,7 @@ The name page currently validates the format of a proposed Pages project name on
 
 The previous customer login, sign-up, password recovery, account dashboard, admin console, Cloudflare account-linking wizard, and their authentication-dependent API routes have been removed from the website code.
 
-There is currently no customer account system, sign-in session, hosting connection, website deployment flow, or payment checkout in the public site. These features will be rebuilt separately.
+There is currently no customer account system, sign-in session, hosting connection, website deployment flow, or payment checkout in the public site. These features will be rebuilt separately. The Pages project configuration has also been cleared of the old authentication secrets and D1 binding.
 
 This repository cleanup does not delete the existing Supabase project, Cloudflare D1 database, Cloudflare Pages settings, secrets, or any external records/tokens. Those infrastructure resources are left untouched.
 
