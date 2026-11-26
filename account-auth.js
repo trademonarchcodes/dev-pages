@@ -31,6 +31,8 @@ const createButton = $("#create-account");
 const signInButton = $("#sign-in");
 let busy = false;
 
+const authPage = location.pathname.endsWith("/signup.html") ? "signup" : location.pathname.endsWith("/login.html") ? "login" : "dashboard";
+
 function note(text, error = false) {
   if (!message) return;
   message.textContent = text;
@@ -52,7 +54,7 @@ async function establishServerSession(user) {
   const result = await response.json();
   if (!response.ok || !result.ok) throw new Error(result.message || "Could not establish your DEVPAGES session.");
   note("You're signed in securely.");
-  await refresh();
+  location.replace("/account.html");
 }
 async function refresh() {
   try {
@@ -148,6 +150,12 @@ async function login() {
   }
   await establishServerSession(credential.user);
 }
+form?.addEventListener("submit", event => {
+  event.preventDefault();
+  if (authPage === "signup" && createButton) createButton.click();
+  else if (authPage === "login" && signInButton) signInButton.click();
+});
+
 createButton?.addEventListener("click", async () => {
   if (busy) return;
   setBusy(true); note("Creating your DEVPAGES account…");
