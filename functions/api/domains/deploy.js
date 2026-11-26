@@ -18,7 +18,7 @@ export async function onRequestPost({request,env}) {
     if(total>18*1024*1024)return json({error:"Your website ZIP is too large. Maximum uncompressed upload is 13 MB."},413);
     const domain=await env.DB.prepare("SELECT id,user_id,project_name,hostname,status,cloudflare_account_id FROM managed_domains WHERE id=? AND user_id=?").bind(domainId,user.id).first();
     if(!domain)return json({error:"Domain not found."},404);
-    if(domain.status!=="active")return json({error:"Your domain must be active before publishing. Complete setup payment first."},409);
+    if(!["active","provisioning"].includes(domain.status))return json({error:"Your domain must be active before publishing. Complete setup payment first."},409);
     const result=await deployPagesFiles(env,domain,files);
     return json({success:true,hostname:domain.hostname,deployment_url:result.url||"https://"+domain.hostname,files:files.length});
   } catch(error) { return json({error:error.message||"Website deployment failed."},400); }
