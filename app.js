@@ -11,31 +11,6 @@ const year=document.getElementById("year");if(year)year.textContent=new Date().g
 const menu=document.querySelector(".menu-toggle"),nav=document.querySelector(".nav");
 menu?.addEventListener("click",()=>{const open=nav.classList.toggle("open");menu.setAttribute("aria-expanded",String(open))});
 nav?.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>{nav.classList.remove("open");menu?.setAttribute("aria-expanded","false")}));
-function slugify(value){return value.toLowerCase().trim().replace(/^https?:\/\//,"").replace(/\s+/g,"").replace(/\.pages\.dev$/i,"").replace(/\.[a-z]{2,}$/i,"").replace(/[^a-z0-9-]/g,"").replace(/-+/g,"-").replace(/^-|-$/g,"").slice(0,40)}
-const form=document.getElementById("name-form"),input=document.getElementById("name-input"),note=document.getElementById("search-note"),results=document.getElementById("domain-results");
-form?.addEventListener("submit",e=>{
- e.preventDefault();
- const base=slugify(input.value);
- results.replaceChildren();
- if(!base){note.textContent="Enter a name using letters or numbers to begin.";return;}
- const card=document.createElement("article");card.className="domain-result pages-domain-result";
- const name=document.createElement("strong");name.textContent=base+".pages.dev";
- const status=document.createElement("span");status.className="domain-status unknown";
- const detail=document.createElement("small");
- const valid=/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(base)&&base.length<=40;
- if(valid){
-  status.className="domain-status available";
-  status.textContent="Name format looks valid";
-  detail.textContent="This is a format check only. The name has not been checked against Cloudflare, is not reserved, and may already be in use.";
-  note.textContent="Format validated: "+base+".pages.dev. Cloudflare confirms availability when a Pages project is created.";
- }else{
-  status.textContent="Choose another name";
-  detail.textContent="Use 1–40 lowercase letters, numbers or hyphens. The name cannot start or end with a hyphen.";
-  note.textContent=detail.textContent;
- }
- card.append(name,status,detail);results.append(card);
-});
- 
 const sharedReviewApi="https://script.google.com/macros/s/AKfycbxDZFklxGHXDh-kNwVO10IeIMMLLLz99H_5K5dTsgVnuaO5Xd_OLJGX-w0Deryliy5nYA/exec";
 const header=document.querySelector(".topbar");
 if(header&&!document.getElementById("shared-rating-badge")){
