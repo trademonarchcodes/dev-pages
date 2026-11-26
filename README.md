@@ -5,6 +5,7 @@ DEVPAGES is a platform whose primary launch offer is a free Cloudflare Pages sub
 ## Implemented foundation
 
 - Responsive dark/electric-blue public website, mobile navigation and launch countdown.
+- Production security headers, private API response caching rules and admin-page no-index controls.
 - Brand-name suggestions and indicative RDAP checks for .com, .net, .org and .io.
 - Customer workspace UI at /account.html and separate administrator console UI at /admin.html.
 - Cloudflare Pages Functions for email-code sign-in, session handling, customer dashboard data and role-guarded administrator summaries.
