@@ -21,8 +21,8 @@ export async function onRequestPost({request,env}) {
     const promo=isPromoUser(user)&&Date.now()<Date.parse(PROMO_ACCESS_END);
     const id=crypto.randomUUID();
     const expiry=promo?PROMO_ACCESS_END:null;
-    await env.DB.prepare("INSERT INTO managed_domains(id,user_id,project_name,hostname,status,promo_eligible,activated_at,expires_at) VALUES(?,?,?,?,?,?,?,?)")
-      .bind(id,user.id,name,name+".pages.dev",promo?"provisioning":"pending_payment",promo?1:0,promo?new Date().toISOString():null,expiry).run();
+    await env.DB.prepare("INSERT INTO managed_domains(id,user_id,project_name,hostname,status,promo_eligible,activated_at,expires_at,cloudflare_account_id) VALUES(?,?,?,?,?,?,?,?,?)")
+      .bind(id,user.id,name,name+".pages.dev",promo?"provisioning":"pending_payment",promo?1:0,promo?new Date().toISOString():null,expiry,accounts[0].id).run();
     if(promo) {
       const tokens=await decryptTokens(connection,env.CF_TOKEN_ENCRYPTION_KEY);
       const accountId=accounts[0].id;
