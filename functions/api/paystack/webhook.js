@@ -1,6 +1,6 @@
-import { json, verifyPaystack, applyPayment, hmacHex, safeEqual } from "../../_lib/billing.js";
+import { json, verifyPaystack, applyPayment, hmacHex, safeEqual, isPaystackKeyAllowed } from "../../_lib/billing.js";
 export async function onRequestPost({ request, env }) {
-  if (!env.DB || !env.PAYSTACK_SECRET_KEY) return json({ error: "Webhook is not configured." }, 503);
+  if (!env.DB || !isPaystackKeyAllowed(env)) return json({ error: "Webhook payment key does not match the configured mode." }, 503);
   const raw = new Uint8Array(await request.arrayBuffer());
   const modern = request.headers.get("Paystack-Signature");
   const legacy = request.headers.get("x-paystack-signature");
