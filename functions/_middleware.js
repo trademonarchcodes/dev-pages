@@ -12,7 +12,7 @@ export async function onRequest(context) {
     headers.set("Cache-Control", "no-store");
     headers.set("X-Robots-Tag", "noindex, nofollow");
   }
-  if (path === "/admin.html") {
+  if (path === "/admin.html" || path === "/account.html") {
     headers.set("X-Robots-Tag", "noindex, nofollow");
   }
 
