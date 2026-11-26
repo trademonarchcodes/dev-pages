@@ -28,7 +28,7 @@ export async function onRequestPost({ request, env }) {
     authUrl.searchParams.set("client_id", env.CF_OAUTH_CLIENT_ID);
     authUrl.searchParams.set("redirect_uri", env.CF_OAUTH_REDIRECT_URI);
     authUrl.searchParams.set("response_type", "code");
-    authUrl.searchParams.set("scope", "pages.write account.read offline_access");
+    authUrl.searchParams.set("scope", "page.write account-settings.read offline_access");
     authUrl.searchParams.set("state", nonce);
     return json({ authorization_url: authUrl.toString() }, 200, {
       "Set-Cookie": "dp_cf_oauth_state=" + state + "; HttpOnly; Secure; SameSite=Lax; Path=/api/cloudflare; Max-Age=600"
