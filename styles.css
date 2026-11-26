@@ -111,3 +111,5 @@ p,.hero-lead,.section-heading p,.pricing-head p,.page-intro p,.notice-panel p,.p
 .auth-card .signup-submit:active{transform:scale(.985)}
 .auth-card .signup-submit:focus-visible{outline:3px solid #d5f5ff;outline-offset:3px}
 .auth-card .signup-submit:disabled{opacity:.7;filter:saturate(.7);transform:none;cursor:wait;box-shadow:none}
+
+[hidden]{display:none!important}
