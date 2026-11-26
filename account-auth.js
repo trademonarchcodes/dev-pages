@@ -5,6 +5,7 @@ import {
   signInWithEmailAndPassword,
   sendEmailVerification,
   sendPasswordResetEmail,
+  updateProfile,
   signOut
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 
@@ -27,6 +28,8 @@ const alertBox = $(".workspace-alert");
 const preview = $(".workspace-heading .preview-pill");
 const emailInput = $("#account-email");
 const passwordInput = $("#account-password");
+const nameInput = $("#account-name");
+const confirmInput = $("#confirm-password");
 const createButton = $("#create-account");
 const signInButton = $("#sign-in");
 let busy = false;
@@ -132,13 +135,58 @@ async function loadDashboard() {
     hostingBox.append(empty);
   }
 }
+function passwordChecks(value) {
+  return {
+    length: value.length >= 8,
+    upper: /[A-Z]/.test(value),
+    lower: /[a-z]/.test(value),
+    number: /[0-9]/.test(value),
+    special: /[^A-Za-z0-9]/.test(value)
+  };
+}
+function updatePasswordRules() {
+  if (!passwordInput) return;
+  const checks = passwordChecks(passwordInput.value);
+  Object.entries(checks).forEach(([key, passed]) => {
+    const row = document.querySelector('[data-rule="' + key + '"]');
+    if (!row) return;
+    row.classList.toggle("passed", passed);
+    row.querySelector("span").textContent = passed ? "✓" : "○";
+  });
+  if (confirmInput && confirmInput.value) {
+    const matches = confirmInput.value === passwordInput.value;
+    confirmInput.classList.toggle("input-invalid", !matches);
+    confirmInput.classList.toggle("input-valid", matches);
+    $("#confirm-error").textContent = matches ? "" : "Passwords do not match.";
+  }
+}
+function clearFieldErrors() {
+  ["name","email","password","confirm"].forEach(key => {
+    const node = $("#" + key + "-error");
+    if (node) node.textContent = "";
+  });
+  [nameInput,emailInput,passwordInput,confirmInput].filter(Boolean).forEach(input => input.classList.remove("input-invalid"));
+}
 async function register() {
-  const email=emailInput.value.trim().toLowerCase(), password=passwordInput.value;
-  if (!email || password.length < 8) throw new Error("Enter a valid email and a password of at least 8 characters.");
+  clearFieldErrors();
+  const name = nameInput?.value.trim() || "";
+  const email = emailInput.value.trim().toLowerCase();
+  const password = passwordInput.value;
+  const confirm = confirmInput?.value || "";
+  let valid = true;
+  if (name.length < 2) { $("#name-error").textContent = "Please enter your full name."; nameInput?.classList.add("input-invalid"); valid = false; }
+  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) { $("#email-error").textContent = "Enter a valid email address."; emailInput.classList.add("input-invalid"); valid = false; }
+  const checks = passwordChecks(password);
+  if (Object.values(checks).some(passed => !passed)) { $("#password-error").textContent = "Your password must meet every requirement above."; passwordInput.classList.add("input-invalid"); valid = false; }
+  if (confirm !== password || !confirm) { $("#confirm-error").textContent = "Passwords do not match."; confirmInput?.classList.add("input-invalid"); valid = false; }
+  if (!valid) throw new Error("Please correct the highlighted fields.");
   const credential=await createUserWithEmailAndPassword(auth,email,password);
+  await updateProfile(credential.user, { displayName: name });
   await sendEmailVerification(credential.user);
   await signOut(auth);
-  note("Account created. Check your inbox and verify your email, then return here to sign in.");
+  form.reset();
+  updatePasswordRules();
+  note("Account created for " + name + ". Check your inbox and verify your email, then return to log in.");
 }
 async function login() {
   const email=emailInput.value.trim().toLowerCase(), password=passwordInput.value;
@@ -150,17 +198,27 @@ async function login() {
   }
   await establishServerSession(credential.user);
 }
-form?.addEventListener("submit", event => {
-  event.preventDefault();
-  if (authPage === "signup" && createButton) createButton.click();
-  else if (authPage === "login" && signInButton) signInButton.click();
+passwordInput?.addEventListener("input", updatePasswordRules);
+confirmInput?.addEventListener("input", updatePasswordRules);
+document.querySelectorAll("[data-toggle-password]").forEach(button => {
+  button.addEventListener("click", () => {
+    const field = document.getElementById(button.dataset.togglePassword);
+    if (!field) return;
+    const reveal = field.type === "password";
+    field.type = reveal ? "text" : "password";
+    button.setAttribute("aria-pressed", String(reveal));
+    button.setAttribute("aria-label", reveal ? "Hide password" : "Show password");
+    button.classList.toggle("is-visible", reveal);
+  });
 });
-
-createButton?.addEventListener("click", async () => {
+form?.addEventListener("submit", async event => {
+  event.preventDefault();
   if (busy) return;
-  setBusy(true); note("Creating your DEVPAGES account…");
-  try { await register(); } catch(error) { note(error.message || "Could not create your account.", true); }
-  finally { setBusy(false); }
+  if (authPage === "signup") {
+    setBusy(true); note("Creating your DEVPAGES account…");
+    try { await register(); } catch(error) { note(error.message || "Could not create your account.", true); }
+    finally { setBusy(false); }
+  } else if (signInButton) signInButton.click();
 });
 signInButton?.addEventListener("click", async () => {
   if (busy) return;
