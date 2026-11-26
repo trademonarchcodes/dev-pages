@@ -1,4 +1,4 @@
-import { json, blake3SelfTest } from "../_lib/billing.js";
+import { json, blake3SelfTest, isPaystackKeyAllowed } from "../_lib/billing.js";
 export async function onRequestGet({env}) {
   const checks={
     assetHashing:blake3SelfTest(),
@@ -6,7 +6,7 @@ export async function onRequestGet({env}) {
     supabase:Boolean(env.SUPABASE_URL&&env.SUPABASE_PUBLISHABLE_KEY),
     cloudflareOAuth:Boolean(env.CF_OAUTH_CLIENT_ID&&env.CF_OAUTH_CLIENT_SECRET&&env.CF_OAUTH_REDIRECT_URI&&env.OAUTH_STATE_SECRET),
     tokenEncryption:Boolean(env.CF_TOKEN_ENCRYPTION_KEY),
-    paystack:Boolean(env.PAYSTACK_SECRET_KEY),
+    paystack:isPaystackKeyAllowed(env),\n    paystackMode:(env.PAYSTACK_MODE||"test").toLowerCase(),
     paystackWebhook:Boolean(env.PAYSTACK_WEBHOOK_SECRET)
   };
   const ready=Object.values(checks).every(Boolean);
