@@ -314,6 +314,41 @@ async function loadBillingStatus(user) {
         });
         card.append(button);
       }
+      if (domain.status === "active") {
+        const upload = document.createElement("input");
+        upload.type = "file"; upload.accept = ".zip,application/zip"; upload.setAttribute("aria-label","Choose website ZIP");
+        upload.style.cssText = "display:block;margin-top:12px;max-width:100%";
+        upload.addEventListener("change", async () => {
+          const archive = upload.files?.[0]; if (!archive) return;
+          if (archive.size > 12 * 1024 * 1024) { showMessage("ZIP must be 12 MB or smaller.","error"); upload.value=""; return; }
+          try {
+            showMessage("Preparing website files…");
+            const JSZip = (await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm")).default;
+            const zip = await JSZip.loadAsync(archive);
+            const files = [];
+            for (const [path, entry] of Object.entries(zip.files)) {
+              if (entry.dir || path.startsWith("__MACOSX/") || path.endsWith(".DS_Store")) continue;
+              if (path.split("/").some(part => part === ".." || part === ".")) throw new Error("ZIP contains an unsafe file path.");
+              const blob = await entry.async("blob");
+              if (blob.size > 8 * 1024 * 1024) throw new Error("A website file is larger than 8 MB.");
+              const base64 = await new Promise((resolve,reject) => {
+                const reader = new FileReader(); reader.onload=()=>resolve(String(reader.result).split(",")[1]); reader.onerror=reject; reader.readAsDataURL(blob);
+              });
+              files.push({path,content:base64,content_type:blob.type||"application/octet-stream"});
+              if (files.length > 1000) throw new Error("ZIP contains more than 1,000 files.");
+            }
+            if (!files.some(file => file.path.toLowerCase() === "index.html" || file.path.toLowerCase().endsWith("/index.html"))) throw new Error("Your ZIP must contain an index.html homepage.");
+            const response = await fetch("/api/domains/deploy", {method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({domain_id:domain.id,files})});
+            const result = await response.json();
+            if (!response.ok || !result.success) throw new Error(result.error || "Website publishing failed.");
+            showMessage("Website files uploaded. Cloudflare is preparing your deployment.");
+            await loadBillingStatus(user);
+          } catch(error) { showMessage(error.message || "Could not publish website.","error"); }
+          finally { upload.value=""; }
+        });
+        const uploadLabel=document.createElement("p"); uploadLabel.textContent="Publish or update your website (ZIP, max 12 MB):";
+        card.append(uploadLabel,upload);
+      }
       list.append(card);
     }
     const history = $("payment-history");
