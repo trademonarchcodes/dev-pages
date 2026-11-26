@@ -288,6 +288,10 @@ async function loadBillingStatus(user) {
     const money = (value) => "₦" + Number(value).toLocaleString("en-NG");
     const domainForm = $("domain-create-form");
     const connectButton = $("cloudflare-connect-button");
+    for (const sectionId of ["projects-card","domains-section","payments-section"]) {
+      const section = $(sectionId);
+      if (section) section.hidden = !payload.account.hosting_connected;
+    }
     if (domainForm) {
       for (const control of domainForm.elements) control.disabled = !payload.account.hosting_connected;
       domainForm.style.opacity = payload.account.hosting_connected ? "1" : ".45";
