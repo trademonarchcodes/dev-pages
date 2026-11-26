@@ -45,6 +45,7 @@ async function refresh(){
         });
         const intro=document.getElementById("hosting-empty-copy");if(intro)intro.hidden=true;
       }else{
+        const intro=document.getElementById("hosting-empty-copy");if(intro)intro.hidden=false;
         const empty=document.createElement("div");empty.className="empty-state";
         const symbol=document.createElement("span");symbol.textContent="◎";
         const heading=document.createElement("strong");heading.textContent="No hosting account connected";
