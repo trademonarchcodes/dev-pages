@@ -111,7 +111,7 @@ export async function applyPayment(env, payment, transaction) {
   if(payment.purpose === "renewal" && domain.status === "suspended") {
     if(!domain.original_deployment_id)throw new Error("The original website deployment could not be found. Contact DEVPAGES support before retrying renewal.");
     const {tokens}=await getCloudflareAccessToken(env,domain.user_id);
-    const restore=await fetch("https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(domain.cloudflare_account_id)+"/pages/projects/"+encodeURIComponent(domain.project_name)+"/deployments/"+encodeURIComponent(domain.original_deployment_id)+"/rollback",{method:"POST",headers:{Authorization:"Bearer "+tokens.access_token,"Content-Type":"application/json"},body:JSON.stringify({})});
+    const restore=await fetch("https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(domain.cloudflare_account_id)+"/pages/projects/"+encodeURIComponent(domain.project_name)+"/deployments/"+encodeURIComponent(domain.original_deployment_id)+"/rollback",{method:"POST",headers:{Authorization:"Bearer "+tokens.access_token}});
     const restored=await restore.json();
     if(!restore.ok||!restored.success)throw new Error(restored.errors?.[0]?.message||"Payment was verified, but website restoration failed. Please contact support.");
   }
