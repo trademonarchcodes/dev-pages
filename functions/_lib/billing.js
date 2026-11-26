@@ -99,7 +99,7 @@ export async function deployPagesFiles(env,domain,files) {
 export async function applyPayment(env, payment, transaction) {
   if (transaction.status !== "success" || transaction.reference !== payment.reference || transaction.amount !== payment.amount_kobo || transaction.currency !== "NGN") throw new Error("Payment details do not match the pending DEVPAGES invoice.");
   const now = new Date();
-  const domain = await env.DB.prepare("SELECT id, user_id, status, expires_at, project_name, cloudflare_account_id FROM managed_domains WHERE id = ? AND user_id = ?").bind(payment.domain_id, payment.user_id).first();
+  const domain = await env.DB.prepare("SELECT id, user_id, status, expires_at, project_name, cloudflare_account_id, original_deployment_id FROM managed_domains WHERE id = ? AND user_id = ?").bind(payment.domain_id, payment.user_id).first();
   if (!domain) throw new Error("Domain record not found.");
   const already = await env.DB.prepare("SELECT status FROM domain_payments WHERE reference = ?").bind(payment.reference).first();
   if (already?.status === "success") return { already_processed: true };
