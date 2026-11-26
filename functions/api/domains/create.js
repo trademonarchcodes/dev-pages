@@ -1,10 +1,4 @@
-import { json, getUser, isPromoUser, PROMO_ACCESS_END } from "../../_lib/billing.js";
-async function decryptTokens(row,keyText) {
-  const raw = Uint8Array.from(atob(keyText),c=>c.charCodeAt(0));
-  const key = await crypto.subtle.importKey("raw",raw,"AES-GCM",false,["decrypt"]);
-  const plain = await crypto.subtle.decrypt({name:"AES-GCM",iv:row.token_iv},key,row.token_ciphertext);
-  return JSON.parse(new TextDecoder().decode(plain));
-}
+import { json, getUser, isPromoUser, PROMO_ACCESS_END, getCloudflareAccessToken } from "../../_lib/billing.js";
 export async function onRequestPost({request,env}) {
   if(request.headers.get("Origin")!==new URL(request.url).origin)return json({error:"Request origin rejected."},403);
   if(!env.DB||!env.CF_TOKEN_ENCRYPTION_KEY)return json({error:"Hosting connection is not configured."},503);
@@ -24,7 +18,7 @@ export async function onRequestPost({request,env}) {
     await env.DB.prepare("INSERT INTO managed_domains(id,user_id,project_name,hostname,status,promo_eligible,activated_at,expires_at,cloudflare_account_id) VALUES(?,?,?,?,?,?,?,?,?)")
       .bind(id,user.id,name,name+".pages.dev",promo?"provisioning":"pending_payment",promo?1:0,promo?new Date().toISOString():null,expiry,accounts[0].id).run();
     if(promo) {
-      const tokens=await decryptTokens(connection,env.CF_TOKEN_ENCRYPTION_KEY);
+      const {tokens}=await getCloudflareAccessToken(env,user.id);
       const accountId=accounts[0].id;
       const cf=await fetch("https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(accountId)+"/pages/projects",{
         method:"POST",headers:{Authorization:"Bearer "+tokens.access_token,"Content-Type":"application/json"},
