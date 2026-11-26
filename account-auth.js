@@ -31,18 +31,103 @@ function friendlyError(error) {
 
 const signupForm = $("signup-form");
 if (signupForm) {
+  const nameInput = $("full-name");
+  const emailInput = $("email");
+  const passwordInput = $("password");
+  const confirmInput = $("confirm-password");
+  const submitButton = signupForm.querySelector("button[type=submit]");
+  const passwordRules = {
+    length: (value) => value.length >= 8,
+    upper: (value) => /[A-Z]/.test(value),
+    lower: (value) => /[a-z]/.test(value),
+    number: (value) => /[0-9]/.test(value),
+    special: (value) => /[^A-Za-z0-9]/.test(value)
+  };
+
+  function setFieldError(input, errorId, text) {
+    const error = $(errorId);
+    if (error) error.textContent = text;
+    if (input) {
+      input.classList.toggle("input-invalid", Boolean(text));
+      input.setAttribute("aria-invalid", text ? "true" : "false");
+    }
+  }
+
+  function checkPasswordRules() {
+    const value = passwordInput.value;
+    let valid = true;
+    for (const [rule, test] of Object.entries(passwordRules)) {
+      const passed = test(value);
+      const item = signupForm.querySelector('[data-rule="' + rule + '"]');
+      if (item) {
+        item.classList.toggle("passed", passed);
+        const icon = item.querySelector(".rule-icon");
+        if (icon) icon.textContent = passed ? "✓" : "○";
+      }
+      if (!passed) valid = false;
+    }
+    setFieldError(passwordInput, "password-error", value && !valid ? "Your password does not meet all the requirements above." : "");
+    return valid;
+  }
+
+  function checkConfirmPassword() {
+    const value = confirmInput.value;
+    const matches = value.length > 0 && value === passwordInput.value;
+    const hint = $("confirm-hint");
+    if (hint) hint.textContent = matches ? "Passwords match ✓" : "Re-enter the same password to confirm it.";
+    if (hint) hint.classList.toggle("hint-passed", matches);
+    setFieldError(confirmInput, "confirm-error", value && !matches ? "Passwords do not match. Please check again." : "");
+    return matches;
+  }
+
+  function validateSignup() {
+    const nameValid = nameInput.value.trim().length >= 2;
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value.trim());
+    setFieldError(nameInput, "name-error", nameValid ? "" : "Please enter your full name.");
+    setFieldError(emailInput, "email-error", emailValid ? "" : "Please enter a valid email address.");
+    const passwordValid = checkPasswordRules();
+    const confirmValid = checkConfirmPassword();
+    return nameValid && emailValid && passwordValid && confirmValid;
+  }
+
+  passwordInput.addEventListener("input", () => {
+    checkPasswordRules();
+    if (confirmInput.value) checkConfirmPassword();
+  });
+  confirmInput.addEventListener("input", checkConfirmPassword);
+  nameInput.addEventListener("blur", () => {
+    if (nameInput.value.trim()) setFieldError(nameInput, "name-error", nameInput.value.trim().length >= 2 ? "" : "Please enter your full name.");
+  });
+  emailInput.addEventListener("blur", () => {
+    if (emailInput.value.trim()) setFieldError(emailInput, "email-error", /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value.trim()) ? "" : "Please enter a valid email address.");
+  });
+
+  document.querySelectorAll("[data-toggle-password]").forEach((toggle) => {
+    toggle.addEventListener("click", () => {
+      const target = $(toggle.dataset.togglePassword);
+      const show = target.type === "password";
+      target.type = show ? "text" : "password";
+      toggle.classList.toggle("is-visible", show);
+      toggle.setAttribute("aria-label", show ? "Hide password" : "Show password");
+      toggle.setAttribute("aria-pressed", String(show));
+    });
+  });
+
   signupForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const button = signupForm.querySelector("button[type=submit]");
-    const name = $("full-name").value.trim();
-    const email = $("email").value.trim().toLowerCase();
-    const password = $("password").value;
-    setBusy(button, true, "Creating account…");
+    if (!validateSignup()) {
+      showMessage("Please correct the highlighted fields before creating your account.", "error");
+      return;
+    }
+    const name = nameInput.value.trim().replace(/\s+/g, " ");
+    const email = emailInput.value.trim().toLowerCase();
+    const password = passwordInput.value;
+    setBusy(submitButton, true, "Creating account…");
     try {
       const { data, error } = await supabase.auth.signUp({
         email, password,
         options: {
-          emailRedirectTo: `${location.origin}/login.html?verified=1`,
+          emailRedirectTo: location.origin + "/login.html?verified=1",
           data: { full_name: name }
         }
       });
@@ -53,15 +138,26 @@ if (signupForm) {
       } else {
         showMessage("Account request received. Check your inbox for the DEVPAGES email confirmation link. After confirming, return here to sign in.");
         signupForm.reset();
+        signupForm.querySelectorAll(".password-rules li").forEach((item) => {
+          item.classList.remove("passed");
+          const icon = item.querySelector(".rule-icon");
+          if (icon) icon.textContent = "○";
+        });
+        $("confirm-hint").textContent = "Re-enter the same password to confirm it.";
+        $("confirm-hint").classList.remove("hint-passed");
+        document.querySelectorAll(".password-toggle").forEach((toggle) => {
+          toggle.classList.remove("is-visible");
+          toggle.setAttribute("aria-pressed", "false");
+          toggle.setAttribute("aria-label", "Show password");
+        });
       }
     } catch (error) {
       showMessage(friendlyError(error), "error");
     } finally {
-      setBusy(button, false);
+      setBusy(submitButton, false);
     }
   });
 }
-
 const loginForm = $("login-form");
 if (loginForm) {
   if (new URLSearchParams(location.search).has("verified")) {
