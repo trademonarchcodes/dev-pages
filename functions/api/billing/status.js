@@ -20,6 +20,9 @@ export async function onRequestGet({ request, env }) {
     const result = await env.DB.prepare(
       "SELECT id, project_name, hostname, status, promo_eligible, activated_at, expires_at, created_at FROM managed_domains WHERE user_id = ? ORDER BY created_at DESC"
     ).bind(user.id).all();
+    const paymentResult = await env.DB.prepare(
+      "SELECT reference, domain_id, purpose, amount_kobo, currency, status, paid_at, created_at FROM domain_payments WHERE user_id = ? ORDER BY created_at DESC LIMIT 100"
+    ).bind(user.id).all();
     const now = Date.now();
     const domains = (result.results || []).map((domain) => {
       const expiry = domain.expires_at ? new Date(domain.expires_at).getTime() : null;
@@ -30,7 +33,8 @@ export async function onRequestGet({ request, env }) {
       account: { registered_at: user.created_at, promo_eligible: promoEligible },
       promotion: promoEligible ? { active: now < new Date(PROMO_ACCESS_END).getTime(), ends_at: PROMO_ACCESS_END } : { active: false, ends_at: null },
       pricing: { setup_ngn: 16000, renewal_ngn: 5500, cycle_days: 30, currency: "NGN" },
-      domains
+      domains,
+      payment_history: paymentResult.results || []
     });
   } catch {
     return json({ error: "Unable to load billing information right now." }, 500);
