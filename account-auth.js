@@ -423,7 +423,7 @@ const domainForm = $("domain-create-form");
 if (domainForm) domainForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const button = domainForm.querySelector("button[type=submit]");
-  const name = $("new-domain-name").value.trim().toLowerCase();
+  const enteredName = $("new-domain-name").value.trim().toLowerCase().replace(/^https?:\\/\\//, "").replace(/\\/+$/, "");\n  const name = enteredName.endsWith(".pages.dev") ? enteredName.slice(0, -".pages.dev".length) : enteredName;
   setBusy(button,true,"Creating domain…");
   try {
     const {data:sessionData}=await supabase.auth.getSession();
