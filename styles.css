@@ -43,3 +43,13 @@ footer .brand-logo{width:190px;height:52px}
 
 .admin-customers{margin-top:20px;overflow:hidden}.admin-customer-list{overflow-x:auto;margin-top:15px}.admin-table{width:100%;border-collapse:collapse;min-width:520px;text-align:left}.admin-table th{font:9px var(--mono);letter-spacing:.08em;color:#86a2c4;padding:11px 9px;border-bottom:1px solid var(--line)}.admin-table td{font-size:11px;color:#d7e3f4;padding:13px 9px;border-bottom:1px solid #1b2a3d}.muted-copy{font-size:11px;color:var(--muted)}
 .account-data-row{display:flex;justify-content:space-between;align-items:center;gap:14px;width:100%;padding:13px 4px;border-bottom:1px solid var(--line);text-align:left}.account-data-row:last-child{border-bottom:0}.account-data-row strong,.account-data-row small{display:block}.account-data-row strong{font-size:12px;text-transform:capitalize}.account-data-row small{font-size:10px;color:var(--muted);margin-top:5px}.account-data-row>span{font:9px var(--mono);color:#79d9b5;text-transform:uppercase;white-space:nowrap}
+
+/* Readability pass: strengthen body copy and improve contrast across all pages. */
+body{font-weight:500;color:#f4f7ff}
+p,.hero-lead,.section-heading p,.pricing-head p,.page-intro p,.notice-panel p,.price-feature p,.faq-section details p,.step p,.promo-copy,.workspace-heading p,.workspace-alert p,.panel-head p,.dash-panel>p,.connection-panel p,.quick-grid small,.empty-state small,.shared-public-review p,.auth-card>p,.muted-copy{font-weight:500;color:#b8c5d8;line-height:1.75}
+.hero-lead{font-weight:600;color:#c7d3e5}
+.section-heading p,.pricing-head p,.page-intro p{font-weight:600;color:#c1cde0}
+.step h3,.price-card h3,.notice-panel strong,.quick-grid strong,.empty-state strong{font-weight:700}
+.faq-section summary,.workspace-alert strong{font-weight:700}
+.nav a,.text-link{font-weight:600}
+.search-note,.fine-print,.metric-card span,.shared-review-copy,.shared-review-shell label{color:#aab9ce;font-weight:500}
