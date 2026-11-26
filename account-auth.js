@@ -300,6 +300,10 @@ async function loadBillingStatus(user) {
       connectButton.textContent = payload.account.hosting_connected ? "Reconnect Cloudflare account ↻" : "Connect my Cloudflare account →";
       connectButton.disabled = false;
     }
+    const cloudflareStatus = $("cloudflare-status");
+    if (cloudflareStatus) cloudflareStatus.textContent = payload.account.hosting_connected ? "Cloudflare account authorized" : "Secure authorization required";
+    const projectStatus = $("project-status");
+    if (projectStatus) projectStatus.textContent = payload.account.hosting_connected ? "Hosting access enabled" : "Hosting access locked";
     summary.textContent = !payload.account.hosting_connected
       ? "Hosting is locked. Connect your Cloudflare account above to unlock domain creation and website publishing."
       : payload.account.promo_eligible && payload.promotion.active
