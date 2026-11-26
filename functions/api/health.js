@@ -16,7 +16,7 @@ export async function onRequest({ env }) {
       sessionSecurityConfigured: cryptoConfigured,
       customerSignInReady: database && emailConfigured && cryptoConfigured,
       customerHostingEncryptionConfigured: hostingEncryptionConfigured,
-      customerHostingConnectionReady: database && cryptoConfigured && hostingEncryptionConfigured,
+      customerHostingConnectionReady: database && emailConfigured && cryptoConfigured && hostingEncryptionConfigured,
       cloudflareCustomerOAuthReady: false,
       registrarCheckoutReady: false,
       paystackReady: false
