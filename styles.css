@@ -53,3 +53,24 @@ p,.hero-lead,.section-heading p,.pricing-head p,.page-intro p,.notice-panel p,.p
 .faq-section summary,.workspace-alert strong{font-weight:700}
 .nav a,.text-link{font-weight:600}
 .search-note,.fine-print,.metric-card span,.shared-review-copy,.shared-review-shell label{color:#aab9ce;font-weight:500}
+
+/* Dedicated authentication pages */
+.auth-page{max-width:560px;min-height:70vh;margin:0 auto;padding:70px 22px 90px}
+.auth-page-head{text-align:center;margin-bottom:28px}
+.auth-page-head h1{font-size:clamp(38px,7vw,58px);margin:18px 0 12px}
+.auth-page-head p{color:var(--muted);line-height:1.7;font-size:14px}
+.auth-card{background:linear-gradient(145deg,#101d30,#0a1320);border:1px solid #2b405a;border-radius:10px;padding:clamp(22px,5vw,34px);box-shadow:0 20px 60px #0004}
+.auth-card h2{font-size:25px;margin:12px 0}
+.auth-card>p{color:var(--muted);font-size:13px;line-height:1.7}
+.auth-card label{display:block;color:#a9c1dc;font:10px var(--mono);letter-spacing:.08em;margin:17px 0 8px}
+.auth-card input{width:100%;background:#070e19;border:1px solid #304662;border-radius:5px;color:#fff;padding:14px;font:14px var(--sans);outline:none}
+.auth-card input:focus{border-color:#65cfff;box-shadow:0 0 0 2px #65cfff22}
+.auth-actions{display:grid;gap:10px;margin-top:22px}
+.auth-actions button{width:100%;border:0;border-radius:5px;background:linear-gradient(110deg,#66dfff,#4b91ff);color:#06101e;font:700 13px var(--sans);padding:15px;cursor:pointer}
+.auth-actions button:disabled{opacity:.55;cursor:wait}
+.auth-message{padding:12px 14px;border-radius:6px;background:#142b43;color:#b7ddff;font-size:12px;line-height:1.6}
+.auth-message.error{background:#351b22;color:#ffc0ca}
+.auth-switch{text-align:center;margin-top:20px;color:var(--muted);font-size:13px}
+.auth-switch a,.auth-card .text-link{color:#80d7ff}
+.auth-utility{display:flex;justify-content:center;margin-top:16px}
+@media(max-width:520px){.auth-page{padding:45px 16px 65px}}
