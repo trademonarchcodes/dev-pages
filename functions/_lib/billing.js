@@ -93,7 +93,7 @@ export async function deployPagesFiles(env,domain,files) {
   const deployment=await fetch(base+projectPath+"/deployments",{method:"POST",headers:auth,body:form});
   const result=await deployment.json();
   if(!deployment.ok||!result.success)throw new Error(result.errors?.[0]?.message||"Cloudflare could not publish this website.");
-  await env.DB.prepare("UPDATE managed_domains SET status='active', updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(domain.id).run();
+  await env.DB.prepare("UPDATE managed_domains SET status='active', original_deployment_id=?, suspended_deployment_id=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(result.result?.id||null,domain.id).run();
   return result.result||{};
 }
 export async function applyPayment(env, payment, transaction) {
@@ -104,13 +104,21 @@ export async function applyPayment(env, payment, transaction) {
   const already = await env.DB.prepare("SELECT status FROM domain_payments WHERE reference = ?").bind(payment.reference).first();
   if (already?.status === "success") return { already_processed: true };
   if(payment.purpose === "setup") await provisionPagesProject(env,domain);
+  if(payment.purpose === "renewal" && domain.status === "suspended") {
+    if(!domain.original_deployment_id)throw new Error("The original website deployment could not be found. Contact DEVPAGES support before retrying renewal.");
+    const {tokens}=await getCloudflareAccessToken(env,domain.user_id);
+    const restore=await fetch("https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(domain.cloudflare_account_id)+"/pages/projects/"+encodeURIComponent(domain.project_name)+"/deployments/"+encodeURIComponent(domain.original_deployment_id)+"/rollback",{method:"POST",headers:{Authorization:"Bearer "+tokens.access_token,"Content-Type":"application/json"},body:JSON.stringify({})});
+    const restored=await restore.json();
+    if(!restore.ok||!restored.success)throw new Error(restored.errors?.[0]?.message||"Payment was verified, but website restoration failed. Please contact support.");
+  }
   const base = payment.purpose === "renewal" && domain.expires_at && new Date(domain.expires_at).getTime() > now.getTime() ? new Date(domain.expires_at) : now;
   const expiry = new Date(base.getTime() + 30 * 86400000).toISOString();
+  const nextStatus = payment.purpose === "setup" ? "provisioning" : "active";
   await env.DB.batch([
     env.DB.prepare("UPDATE domain_payments SET status='success', paid_at=CURRENT_TIMESTAMP WHERE reference=? AND status='pending'").bind(payment.reference),
-    env.DB.prepare("UPDATE managed_domains SET status='active', activated_at=COALESCE(activated_at, ?), expires_at=?, updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=?").bind(now.toISOString(), expiry, payment.domain_id, payment.user_id)
+    env.DB.prepare("UPDATE managed_domains SET status=?, activated_at=COALESCE(activated_at, ?), expires_at=?, suspended_deployment_id=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=?").bind(nextStatus, now.toISOString(), expiry, payment.domain_id, payment.user_id)
   ]);
-  return { already_processed: false, expires_at: expiry };
+  return { already_processed: false, expires_at: expiry, status: nextStatus };
 }
 export async function hmacHex(secret, bytes) {
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-512" }, false, ["sign"]);
