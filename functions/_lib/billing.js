@@ -123,7 +123,7 @@ function blake3Hex(value){
   while(stack.length)out=b3parent(stack.pop(),out.chainingValue());
   return out.rootHex();
 }
-export function blake3SelfTest(){return blake3Hex("abc")==="6437b3ac38465133ffb63b75273a8db548c558465d79db03ff359c6cd5bd9d85";}
+export function blake3SelfTest(){return blake3Hex("abc")==="6437b3ac38465133ffb63b75273a8db548c558465d79db03fd359c6cd5bd9d85";}
 
 export async function deployPagesFiles(env,domain,files,options={}) {
   const {tokens}=await getCloudflareAccessToken(env,domain.user_id);
