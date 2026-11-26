@@ -9,25 +9,34 @@ export async function onRequest({ env }) {
 
   const sessionSecurityConfigured = Boolean(env.SESSION_SECRET);
   const hostingEncryptionConfigured = /^[a-f0-9]{64}$/i.test(env.TOKEN_ENCRYPTION_KEY || "");
-  const supabaseAuthConfigured = true; // Public project URL and publishable key are used by the browser.
-  const customerSignInReady = database && sessionSecurityConfigured;
+  const supabaseAuthConfigured = true;
+  const publicEmailDeliveryReady = env.SUPABASE_SMTP_CONFIGURED === "true";
+  const customerLoginReady = database && sessionSecurityConfigured;
+  const customerRegistrationReady = customerLoginReady && publicEmailDeliveryReady;
+
+  let status = "foundation";
+  if (customerRegistrationReady) status = "supabase-auth-ready";
+  else if (customerLoginReady) status = "awaiting-custom-smtp-for-public-registration";
 
   return Response.json({
     ok: true,
     service: "DEVPAGES",
-    status: customerSignInReady ? "supabase-auth-configured-awaiting-live-test" : "foundation",
+    status,
     authProvider: "supabase",
     capabilities: {
       database,
       supabaseAuthConfigured,
       legacyFirebaseAuthConfigured: false,
       sessionSecurityConfigured,
-      customerSignInReady,
-      emailVerificationRequired: true,
+      customerLoginReady,
+      customerSignInReady: customerLoginReady,
+      customerRegistrationReady,
+      publicEmailDeliveryReady,
       customSmtpRequiredForPublicEmailDelivery: true,
       customerHostingEncryptionConfigured: hostingEncryptionConfigured,
-      customerHostingConnectionReady: customerSignInReady && hostingEncryptionConfigured,
+      customerHostingConnectionReady: customerLoginReady && hostingEncryptionConfigured,
       cloudflareCustomerOAuthReady: false,
+      websiteCreationReady: false,
       registrarCheckoutReady: false,
       paystackReady: false
     }
