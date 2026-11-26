@@ -102,27 +102,40 @@ export async function deployPagesFiles(env,domain,files,options={}) {
 }
 export async function applyPayment(env, payment, transaction) {
   if (transaction.status !== "success" || transaction.reference !== payment.reference || transaction.amount !== payment.amount_kobo || transaction.currency !== "NGN") throw new Error("Payment details do not match the pending DEVPAGES invoice.");
-  const now = new Date();
-  const domain = await env.DB.prepare("SELECT id, user_id, status, expires_at, project_name, cloudflare_account_id, original_deployment_id FROM managed_domains WHERE id = ? AND user_id = ?").bind(payment.domain_id, payment.user_id).first();
-  if (!domain) throw new Error("Domain record not found.");
   const already = await env.DB.prepare("SELECT status FROM domain_payments WHERE reference = ?").bind(payment.reference).first();
   if (already?.status === "success") return { already_processed: true };
-  if(payment.purpose === "setup") await provisionPagesProject(env,domain);
-  if(payment.purpose === "renewal" && domain.status === "suspended") {
-    if(!domain.original_deployment_id)throw new Error("The original website deployment could not be found. Contact DEVPAGES support before retrying renewal.");
-    const {tokens}=await getCloudflareAccessToken(env,domain.user_id);
-    const restore=await fetch("https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(domain.cloudflare_account_id)+"/pages/projects/"+encodeURIComponent(domain.project_name)+"/deployments/"+encodeURIComponent(domain.original_deployment_id)+"/rollback",{method:"POST",headers:{Authorization:"Bearer "+tokens.access_token}});
-    const restored=await restore.json();
-    if(!restore.ok||!restored.success)throw new Error(restored.errors?.[0]?.message||"Payment was verified, but website restoration failed. Please contact support.");
+  const lockId="payment:"+payment.reference;
+  const lock=await env.DB.prepare("INSERT OR IGNORE INTO billing_webhook_events(event_id,event_type) VALUES(?,?)").bind(lockId,"payment_processing").run();
+  if(!lock.meta?.changes) {
+    const latest=await env.DB.prepare("SELECT status FROM domain_payments WHERE reference=?").bind(payment.reference).first();
+    if(latest?.status==="success")return {already_processed:true};
+    throw new Error("This payment is already being processed. Wait a moment and refresh your dashboard.");
   }
-  const base = payment.purpose === "renewal" && domain.expires_at && new Date(domain.expires_at).getTime() > now.getTime() ? new Date(domain.expires_at) : now;
-  const expiry = new Date(base.getTime() + 30 * 86400000).toISOString();
-  const nextStatus = payment.purpose === "setup" ? "provisioning" : "active";
-  await env.DB.batch([
-    env.DB.prepare("UPDATE domain_payments SET status='success', paid_at=CURRENT_TIMESTAMP WHERE reference=? AND status='pending'").bind(payment.reference),
-    env.DB.prepare("UPDATE managed_domains SET status=?, activated_at=COALESCE(activated_at, ?), expires_at=?, suspended_deployment_id=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=?").bind(nextStatus, now.toISOString(), expiry, payment.domain_id, payment.user_id)
-  ]);
-  return { already_processed: false, expires_at: expiry, status: nextStatus };
+  try {
+    const now = new Date();
+    const domain = await env.DB.prepare("SELECT id, user_id, status, expires_at, project_name, cloudflare_account_id, original_deployment_id FROM managed_domains WHERE id = ? AND user_id = ?").bind(payment.domain_id, payment.user_id).first();
+    if (!domain) throw new Error("Domain record not found.");
+    if(payment.purpose === "setup") await provisionPagesProject(env,domain);
+    if(payment.purpose === "renewal" && domain.status === "suspended") {
+      if(!domain.original_deployment_id)throw new Error("The original website deployment could not be found. Contact DEVPAGES support before retrying renewal.");
+      const {tokens}=await getCloudflareAccessToken(env,domain.user_id);
+      const restore=await fetch("https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(domain.cloudflare_account_id)+"/pages/projects/"+encodeURIComponent(domain.project_name)+"/deployments/"+encodeURIComponent(domain.original_deployment_id)+"/rollback",{method:"POST",headers:{Authorization:"Bearer "+tokens.access_token}});
+      const restored=await restore.json();
+      if(!restore.ok||!restored.success)throw new Error(restored.errors?.[0]?.message||"Payment was verified, but website restoration failed. Please contact support.");
+    }
+    const base = payment.purpose === "renewal" && domain.expires_at && new Date(domain.expires_at).getTime() > now.getTime() ? new Date(domain.expires_at) : now;
+    const expiry = new Date(base.getTime() + 30 * 86400000).toISOString();
+    const nextStatus = payment.purpose === "setup" ? "provisioning" : "active";
+    await env.DB.batch([
+      env.DB.prepare("UPDATE domain_payments SET status='success', paid_at=CURRENT_TIMESTAMP WHERE reference=? AND status='pending'").bind(payment.reference),
+      env.DB.prepare("UPDATE managed_domains SET status=?, activated_at=COALESCE(activated_at, ?), expires_at=?, suspended_deployment_id=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=? AND user_id=?").bind(nextStatus, now.toISOString(), expiry, payment.domain_id, payment.user_id),
+      env.DB.prepare("DELETE FROM billing_webhook_events WHERE event_id=?").bind(lockId)
+    ]);
+    return { already_processed: false, expires_at: expiry, status: nextStatus };
+  } catch(error) {
+    await env.DB.prepare("DELETE FROM billing_webhook_events WHERE event_id=?").bind(lockId).run();
+    throw error;
+  }
 }
 export async function hmacHex(secret, bytes) {
   const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-512" }, false, ["sign"]);
