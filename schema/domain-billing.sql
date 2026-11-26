@@ -31,5 +31,3 @@ CREATE TABLE IF NOT EXISTS billing_webhook_events (
   event_type TEXT NOT NULL,
   processed_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-ALTER TABLE managed_domains ADD COLUMN original_deployment_id TEXT;
-ALTER TABLE managed_domains ADD COLUMN suspended_deployment_id TEXT;
