@@ -73,7 +73,7 @@ export async function deployPagesFiles(env,domain,files) {
   const manifest={};
   const uploadItems=[];
   for(const file of files) {
-    const path="/"+file.path.replace(/^\\/+/, "");
+    const path="/" + file.path.replace(/^\/+/, "");
     const bytes=Uint8Array.from(atob(file.content),ch=>ch.charCodeAt(0));
     const digest=await crypto.subtle.digest("SHA-256",bytes);
     const hash=[...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,"0")).join("");
