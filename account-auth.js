@@ -1,7 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
 import {
-  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  sendEmailVerification, sendPasswordResetEmail, updateProfile
+  initializeAuth, browserLocalPersistence, createUserWithEmailAndPassword,
+  signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail,
+  updateProfile
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -218,7 +219,16 @@ function start() {
 if(page==="dashboard") {
   start();
 } else {
-  try { auth=getAuth(initializeApp(firebaseConfig)); start(); }
+  try {
+    const app = initializeApp(firebaseConfig);
+    // Explicitly create the browser Auth instance with local persistence.
+    // This avoids relying on getAuth's implicit component initialization.
+    auth = initializeAuth(app, { persistence: browserLocalPersistence });
+    if (!auth || typeof auth._getRecaptchaConfig !== "function") {
+      throw new Error("Firebase Auth did not initialize correctly. Please refresh and try again.");
+    }
+    start();
+  }
   catch(error) {
     console.error("DEVPAGES authentication startup:",error);
     messageText("Secure sign-in could not start. Refresh the page and check your internet connection.","error");
