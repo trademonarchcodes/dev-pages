@@ -12,47 +12,18 @@ const menu=document.querySelector(".menu-toggle"),nav=document.querySelector(".n
 menu?.addEventListener("click",()=>{const open=nav.classList.toggle("open");menu.setAttribute("aria-expanded",String(open))});
 nav?.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>{nav.classList.remove("open");menu?.setAttribute("aria-expanded","false")}));
 const form=document.getElementById("name-form"),input=document.getElementById("name-input"),note=document.getElementById("search-note"),results=document.getElementById("domain-results");
-const extensions=[".com",".net",".org",".io"];
-function slugify(value){return value.toLowerCase().trim().replace(/^https?:\/\//,"").replace(/\s+/g,"").replace(/\.[a-z]{2,}$/i,"").replace(/[^a-z0-9-]/g,"").replace(/-+/g,"-").replace(/^-|-$/g,"").slice(0,40)}
-function suggestNames(value){
- const base=slugify(value);if(!base)return [];
- return [...new Set([...extensions.map(ext=>base+ext),`get${base}.com`,`try${base}.com`,`${base}hq.com`,`${base}hub.com`])].slice(0,8);
-}
-function renderResults(items,registrarConnected){
- for(const item of items){
-  const card=document.createElement("article");card.className="domain-result";
-  const name=document.createElement("strong");name.textContent=item.domain;
-  const status=document.createElement("span");status.className="domain-status "+(item.status==="available"?"available":item.status==="registered"?"taken":"unknown");
-  status.textContent=item.status==="available"?(item.customerPrice!==null&&item.customerPrice!==undefined?"Registrar reports available":"Availability reported") :item.status==="registered"?"Registered":item.status==="unsupported"?"Not supported":"Unconfirmed";
-  const detail=document.createElement("small");
-  if(item.status==="available"&&item.customerPrice!==null&&item.customerPrice!==undefined){
-   const renewal=item.customerRenewalEstimate!==null&&item.customerRenewalEstimate!==undefined?` · renewal estimate $${item.customerRenewalEstimate.toFixed(2)}`:"";
-   detail.textContent=`First year ${item.currency||"USD"} ${item.customerPrice.toFixed(2)} (includes the $3 DEVPAGES fee)${renewal}. Final price and availability must be checked again before purchase.`;
-  }else if(item.status==="available"){
-   detail.textContent="The registrar reports availability, but has not returned a usable price. No purchase can be made until a final quote is available.";
-  }else if(item.status==="registered"){
-   detail.textContent="The registrar reports that this name cannot currently be registered.";
-  }else{
-   detail.textContent=registrarConnected?"This extension or name could not be confirmed by the registrar.":"No definitive availability result. RDAP is indicative only; registrar confirmation and live pricing are not connected yet.";
-  }
-  card.append(name,status,detail);results.append(card);
- }
-}
+function slugify(value){return value.toLowerCase().trim().replace(/^https?:\\/\\//,"").replace(/\\s+/g,"").replace(/\\.pages\\.dev$/i,"").replace(/\\.[a-z]{2,}$/i,"").replace(/[^a-z0-9-]/g,"").replace(/-+/g,"-").replace(/^-|-$/g,"").slice(0,40)}
 form?.addEventListener("submit",async e=>{
- e.preventDefault();const value=input.value.trim(),base=slugify(value);results.replaceChildren();
+ e.preventDefault();const base=slugify(input.value);results.replaceChildren();
  if(!base){note.textContent="Enter a name using letters or numbers to begin.";return;}
- const pagesName=base+".pages.dev";const pagesCard=document.createElement("article");pagesCard.className="domain-result pages-domain-result";const pagesTitle=document.createElement("strong");pagesTitle.textContent=pagesName;const pagesStatus=document.createElement("span");pagesStatus.className="domain-status unknown";pagesStatus.textContent="Suggested Pages.dev name";const pagesDetail=document.createElement("small");pagesDetail.textContent="Main DEVPAGES offer. Cloudflare Pages must confirm the project name before creation; this suggestion does not reserve it.";pagesCard.append(pagesTitle,pagesStatus,pagesDetail);results.append(pagesCard);const domains=suggestNames(value);note.textContent="Your featured address is "+pagesName+". Checking optional .com, .net, .org and .io alternatives…";
- const button=form.querySelector("button");button.disabled=true;
- try{
-  const response=await fetch("/api/domain-check",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({domains})});
-  const data=await response.json();if(!response.ok)throw new Error(data.error||"Lookup is temporarily unavailable.");
-  const secondaryTitle=document.createElement("div");secondaryTitle.className="section-kicker";secondaryTitle.textContent="OPTIONAL CUSTOM DOMAIN IDEAS";results.append(secondaryTitle);renderResults(data.results||[],data.registrarConnected);
-  note.textContent=data.registrarConnected?`Live registrar results for “${value}”. DEVPAGES adds $3 to the registrar's price.`:`Indicative results for “${value}”. These results do not confirm availability or reserve a domain.`;
- }catch(error){note.textContent=error.message||"Could not complete the lookup. Please try again."}
- finally{button.disabled=false}
+ const card=document.createElement("article");card.className="domain-result pages-domain-result";
+ const name=document.createElement("strong");name.textContent=base+".pages.dev";
+ const status=document.createElement("span");status.className="domain-status unknown";status.textContent="Name format looks good";
+ const detail=document.createElement("small");detail.textContent="This is your exact requested address. Sign in and connect your hosting account to proceed to the live project-name check. DEVPAGES will not add random characters or reserve a name before Cloudflare confirms it.";
+ card.append(name,status,detail);results.append(card);
+ note.textContent="Your requested address is "+base+".pages.dev. Live availability confirmation and project creation will be enabled after secure account sign-in and hosting connection are complete.";
 });
-
-
+ 
 const sharedReviewApi="https://script.google.com/macros/s/AKfycbxDZFklxGHXDh-kNwVO10IeIMMLLLz99H_5K5dTsgVnuaO5Xd_OLJGX-w0Deryliy5nYA/exec";
 const header=document.querySelector(".topbar");
 if(header&&!document.getElementById("shared-rating-badge")){
