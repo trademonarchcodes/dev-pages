@@ -378,8 +378,26 @@ async function loadBillingStatus(user) {
         const empty = document.createElement("p"); empty.textContent = "No payments recorded yet."; history.append(empty);
       } else {
         for (const payment of payload.payment_history) {
-          const row = document.createElement("p");
-          row.textContent = money(payment.amount_kobo / 100) + " · " + payment.purpose + " · " + payment.status + " · " + new Date(payment.created_at).toLocaleDateString();
+          const row = document.createElement("div");
+          row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap";
+          const details = document.createElement("span");
+          details.textContent = money(payment.amount_kobo / 100) + " · " + payment.purpose + " · " + payment.status + " · " + new Date(payment.created_at).toLocaleDateString();
+          row.append(details);
+          if (payment.status === "pending") {
+            const verify = document.createElement("button");
+            verify.type = "button"; verify.className = "auth-submit"; verify.textContent = "Verify payment";
+            verify.addEventListener("click", async () => {
+              verify.disabled = true; verify.textContent = "Verifying…";
+              try {
+                const res = await fetch("/api/paystack/verify", {method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({reference:payment.reference})});
+                const checked = await res.json();
+                if (!res.ok || !checked.success) throw new Error(checked.error || "Payment is not confirmed yet.");
+                showMessage("Payment confirmed. Your hosting record has been updated.");
+                await loadBillingStatus(user);
+              } catch(error) { showMessage(error.message || "Could not verify payment.","error"); verify.disabled=false; verify.textContent="Verify payment"; }
+            });
+            row.append(verify);
+          }
           history.append(row);
         }
       }
