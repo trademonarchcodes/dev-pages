@@ -286,6 +286,7 @@ function bindControls() {
     if (page === "signup") createAccount();
     else if (page === "login") login();
   });
+  $("#sign-in")?.addEventListener("click", () => { if (!busy && page === "login") login(); });
   $("#reset-password")?.addEventListener("click", resetPassword);
   $("#sign-out")?.addEventListener("click", async () => {
     const button = $("#sign-out"); if (button) button.disabled = true;
@@ -302,11 +303,8 @@ try {
   bindControls();
   if (page === "signup") renderPasswordRules();
   if (page === "dashboard") await checkDashboardSession();
-  else {
-    const response = await fetch("/api/auth/me", { credentials:"same-origin", cache:"no-store" });
-    const data = await response.json().catch(() => ({}));
-    if (data.authenticated) location.replace("/account.html");
-  }
+  // Keep login and signup pages stable. Only the dashboard performs an auth redirect.
+
 } catch (error) {
   console.error("DEVPAGES authentication startup failed", error);
   showMessage("The secure sign-in service could not start. Check your connection, refresh the page, and try again.", "error");
