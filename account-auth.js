@@ -334,7 +334,7 @@ async function loadBillingStatus(user) {
               const base64 = await new Promise((resolve,reject) => {
                 const reader = new FileReader(); reader.onload=()=>resolve(String(reader.result).split(",")[1]); reader.onerror=reject; reader.readAsDataURL(blob);
               });
-              files.push({path,content:base64,content_type:blob.type||"application/octet-stream"});
+              const ext = path.split(".").pop().toLowerCase();\n              const mimeMap = {html:"text/html; charset=utf-8",htm:"text/html; charset=utf-8",css:"text/css; charset=utf-8",js:"text/javascript; charset=utf-8",mjs:"text/javascript; charset=utf-8",json:"application/json",svg:"image/svg+xml",png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg",webp:"image/webp",gif:"image/gif",ico:"image/x-icon",txt:"text/plain; charset=utf-8",xml:"application/xml",pdf:"application/pdf",woff:"font/woff",woff2:"font/woff2"};\n              files.push({path,content:base64,content_type:blob.type||mimeMap[ext]||"application/octet-stream"});
               if (files.length > 1000) throw new Error("ZIP contains more than 1,000 files.");
             }
             if (!files.some(file => file.path.toLowerCase() === "index.html" || file.path.toLowerCase().endsWith("/index.html"))) throw new Error("Your ZIP must contain an index.html homepage.");
