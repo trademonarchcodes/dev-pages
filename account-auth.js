@@ -59,6 +59,7 @@ async function refresh() {
     const response = await fetch("/api/auth/me", { credentials: "same-origin", cache: "no-store" });
     const data = await response.json();
     if (data.authenticated && data.user) {
+      if (!signedIn) { location.replace("/account.html"); return; }
       if (signedIn) signedIn.hidden = false;
       if (form) form.hidden = true;
       if (alertBox) alertBox.hidden = true;
@@ -66,6 +67,8 @@ async function refresh() {
       signedIn.querySelector("[data-user-role]").textContent = data.user.role === "admin" ? "Administrator account" : "Customer account";
       if (preview) { preview.textContent = "ACCOUNT ACTIVE"; preview.classList.add("active-pill"); }
       await loadDashboard();
+    } else if (signedIn) {
+      location.replace("/login.html");
     }
   } catch {
     note("Unable to check account status. Please refresh.", true);
