@@ -35,8 +35,8 @@ export async function onRequestPost({request,env}) {
         await env.DB.prepare("UPDATE managed_domains SET status='failed' WHERE id=?").bind(id).run();
         return json({error:result.errors?.[0]?.message||"Could not create Pages project."},400);
       }
-      await env.DB.prepare("UPDATE managed_domains SET status='active' WHERE id=?").bind(id).run();
-      return json({domain:{id,hostname:name+".pages.dev",status:"active",expires_at:expiry},promo:true});
+      await env.DB.prepare("UPDATE managed_domains SET status='provisioning' WHERE id=?").bind(id).run();
+      return json({domain:{id,hostname:name+".pages.dev",status:"provisioning",expires_at:expiry},promo:true});
     }
     return json({domain:{id,hostname:name+".pages.dev",status:"pending_payment",expires_at:null},promo:false,setup_fee_ngn:16000});
   }catch(error){return json({error:error.message||"Could not create domain."},400);}
