@@ -137,7 +137,8 @@ export async function deployPagesFiles(env,domain,files,options={}) {
   const uploadItems=[];
   for(const file of files) {
     const path="/"+file.path.replace(/^\/+/, "");
-    const dot=path.lastIndexOf("."),slash=path.lastIndexOf("/");\n    const extension=dot>slash?path.slice(dot+1):"";
+    const dot=path.lastIndexOf("."),slash=path.lastIndexOf("/");
+    const extension=dot>slash?path.slice(dot+1):"";
     const hash=blake3Hex(file.content+extension).slice(0,32);
     const mime=file.content_type||"application/octet-stream";
     manifest[path]=hash;
