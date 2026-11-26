@@ -3,20 +3,22 @@ export async function onRequest({ env }) {
   if (env.DEVPAGES_DB) {
     try { await env.DEVPAGES_DB.prepare("SELECT 1 AS ok").first(); database = true; } catch {}
   }
-  const emailConfigured = Boolean(env.CF_ACCOUNT_ID && env.CF_EMAIL_API_TOKEN && env.EMAIL_FROM);
   const cryptoConfigured = Boolean(env.AUTH_PEPPER && env.SESSION_SECRET);
   const hostingEncryptionConfigured = /^[a-f0-9]{64}$/i.test(env.TOKEN_ENCRYPTION_KEY || "");
+  const firebaseAuthConfigured = true;
+  const signInReady = database && cryptoConfigured && firebaseAuthConfigured;
   return Response.json({
     ok: true,
     service: "DEVPAGES",
-    status: database && emailConfigured && cryptoConfigured ? "account-ready-pending-provider-integrations" : "foundation",
+    status: signInReady ? "firebase-auth-configured-awaiting-live-test" : "foundation",
     capabilities: {
       database,
-      emailDeliveryConfigured: emailConfigured,
+      firebaseAuthConfigured,
+      emailVerificationRequired: true,
       sessionSecurityConfigured: cryptoConfigured,
-      customerSignInReady: database && emailConfigured && cryptoConfigured,
+      customerSignInReady: signInReady,
       customerHostingEncryptionConfigured: hostingEncryptionConfigured,
-      customerHostingConnectionReady: database && emailConfigured && cryptoConfigured && hostingEncryptionConfigured,
+      customerHostingConnectionReady: signInReady && hostingEncryptionConfigured,
       cloudflareCustomerOAuthReady: false,
       registrarCheckoutReady: false,
       paystackReady: false
