@@ -10,7 +10,7 @@ export async function onRequestPost({request,env}) {
     if(!Array.isArray(files)||!files.length||files.length>1000)return json({error:"Upload a ZIP containing your website files (maximum 1,000 files)."},400);
     let total=0;
     for(const file of files) {
-      if(!file||typeof file.path!=="string"||typeof file.content!=="string"||file.content.length>8*1024*1024)return json({error:"One or more files are invalid or too large."},400);
+      if(!file||typeof file.path!=="string"||typeof file.content!=="string"||file.content.length>11*1024*1024)return json({error:"One or more files are invalid or too large."},400);
       const path=file.path.replace(/^\/+/, "");
       if(!path||path.split("/").some(p=>p===".."||p===".")||path.startsWith("_worker.")||path==="functions"||path.startsWith("functions/"))return json({error:"Invalid or unsupported website file path. Pages Functions and custom Workers are not supported by ZIP publishing yet."},400);
       total+=file.content.length;
