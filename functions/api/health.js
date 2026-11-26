@@ -5,6 +5,7 @@ export async function onRequest({ env }) {
   }
   const emailConfigured = Boolean(env.CF_ACCOUNT_ID && env.CF_EMAIL_API_TOKEN && env.EMAIL_FROM);
   const cryptoConfigured = Boolean(env.AUTH_PEPPER && env.SESSION_SECRET);
+  const hostingEncryptionConfigured = /^[a-f0-9]{64}$/i.test(env.TOKEN_ENCRYPTION_KEY || "");
   return Response.json({
     ok: true,
     service: "DEVPAGES",
@@ -14,6 +15,8 @@ export async function onRequest({ env }) {
       emailDeliveryConfigured: emailConfigured,
       sessionSecurityConfigured: cryptoConfigured,
       customerSignInReady: database && emailConfigured && cryptoConfigured,
+      customerHostingEncryptionConfigured: hostingEncryptionConfigured,
+      customerHostingConnectionReady: database && cryptoConfigured && hostingEncryptionConfigured,
       cloudflareCustomerOAuthReady: false,
       registrarCheckoutReady: false,
       paystackReady: false
