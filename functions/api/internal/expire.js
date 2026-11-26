@@ -4,17 +4,17 @@ export async function onRequestPost({env}) {
   if(!env.DB||!env.CF_TOKEN_ENCRYPTION_KEY)return json({error:"Expiry service is not configured."},503);
   const now=new Date().toISOString();
   const due=await env.DB.prepare("SELECT id,user_id,project_name,hostname,status,cloudflare_account_id,original_deployment_id FROM managed_domains WHERE status='active' AND expires_at IS NOT NULL AND expires_at<=? AND original_deployment_id IS NOT NULL ORDER BY expires_at LIMIT 10").bind(now).all();
-  const results=[];
+  let suspended=0,failed=0;
   for(const domain of due.results||[]) {
     const lock=await env.DB.prepare("UPDATE managed_domains SET status='provisioning',updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='active' AND expires_at<=?").bind(domain.id,now).run();
     if(!lock.meta?.changes)continue;
     try {
       const deployed=await deployPagesFiles(env,domain,[{path:"index.html",content:btoa(unescape(encodeURIComponent(maintenance))),content_type:"text/html; charset=utf-8"}],{suspension:true});
-      results.push({domain:domain.hostname,status:"suspended",deployment_id:deployed.id});
+      suspended++;
     } catch(error) {
       await env.DB.prepare("UPDATE managed_domains SET status='active',updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='provisioning'").bind(domain.id).run();
-      results.push({domain:domain.hostname,status:"error",error:error.message||"Suspension failed"});
+      failed++;
     }
   }
-  return json({success:true,checked:(due.results||[]).length,results});
+  return json({success:true,checked:(due.results||[]).length,suspended,failed});
 }
