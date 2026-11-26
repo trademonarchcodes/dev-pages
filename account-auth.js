@@ -443,6 +443,16 @@
     bindPasswordButtons();
     if (passwordInput) passwordInput.addEventListener("input", renderRules);
     if (confirmInput) confirmInput.addEventListener("input", renderRules);
+    // Bind the primary action directly as well as the form submit event.
+    // This makes the CTA respond even if another page script interferes with submit handling.
+    if (page === "signup" && button) {
+      button.type = "button";
+      button.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (!busy) void signup();
+      });
+    }
     if (form) {
       form.addEventListener("submit", function (event) {
         event.preventDefault();
