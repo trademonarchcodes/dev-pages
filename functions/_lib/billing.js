@@ -5,9 +5,9 @@ export const SETUP_AMOUNT = 1600000;
 export const RENEWAL_AMOUNT = 550000;
 export const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
 export async function getUser(request, env) {
-  const token = (request.headers.get("Authorization") || "").replace(/^Bearer\\s+/i, "");
+  const token = (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
   if (!token || !env.SUPABASE_URL || !env.SUPABASE_PUBLISHABLE_KEY) return null;
-  const response = await fetch(env.SUPABASE_URL.replace(/\\/$/, "") + "/auth/v1/user", { headers: { apikey: env.SUPABASE_PUBLISHABLE_KEY, Authorization: "Bearer " + token } });
+  const response = await fetch(env.SUPABASE_URL.replace(/\/$/, "") + "/auth/v1/user", { headers: { apikey: env.SUPABASE_PUBLISHABLE_KEY, Authorization: "Bearer " + token } });
   if (!response.ok) return null;
   return response.json();
 }
