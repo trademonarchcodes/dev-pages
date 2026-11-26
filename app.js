@@ -11,7 +11,7 @@ const year=document.getElementById("year");if(year)year.textContent=new Date().g
 const menu=document.querySelector(".menu-toggle"),nav=document.querySelector(".nav");
 menu?.addEventListener("click",()=>{const open=nav.classList.toggle("open");menu.setAttribute("aria-expanded",String(open))});
 nav?.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>{nav.classList.remove("open");menu?.setAttribute("aria-expanded","false")}));
-function slugify(value){return value.toLowerCase().trim().replace(/^https?:\\/\\//,"").replace(/\\s+/g,"").replace(/\\.pages\\.dev$/i,"").replace(/\\.[a-z]{2,}$/i,"").replace(/[^a-z0-9-]/g,"").replace(/-+/g,"-").replace(/^-|-$/g,"").slice(0,40)}
+function slugify(value){return value.toLowerCase().trim().replace(/^https?:\/\//,"").replace(/\s+/g,"").replace(/\.pages\.dev$/i,"").replace(/\.[a-z]{2,}$/i,"").replace(/[^a-z0-9-]/g,"").replace(/-+/g,"-").replace(/^-|-$/g,"").slice(0,40)}
 const form=document.getElementById("name-form"),input=document.getElementById("name-input"),note=document.getElementById("search-note"),results=document.getElementById("domain-results");
 form?.addEventListener("submit",e=>{
  e.preventDefault();
