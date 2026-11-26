@@ -281,40 +281,65 @@ async function loadBillingStatus(user) {
   if (!summary || !list) return;
   try {
     const { data: sessionData } = await supabase.auth.getSession();
-    const response = await fetch("/api/billing/status", {
-      headers: { Authorization: "Bearer " + sessionData.session.access_token }
-    });
+    const token = sessionData.session?.access_token;
+    const response = await fetch("/api/billing/status", { headers: { Authorization: "Bearer " + token } });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || "Billing details unavailable.");
     const money = (value) => "₦" + Number(value).toLocaleString("en-NG");
     summary.textContent = payload.account.promo_eligible && payload.promotion.active
-      ? "Launch promotion active until 16 January 2027. Your countdown continues."
+      ? "Launch promotion active until 16 January 2027. Each eligible domain has its own countdown."
       : "Per domain: " + money(payload.pricing.setup_ngn) + " setup + " + money(payload.pricing.renewal_ngn) + " every 30 days.";
     list.replaceChildren();
     if (!payload.domains.length) {
-      const empty = document.createElement("p");
-      empty.textContent = "No domains have been added to your account yet.";
-      list.append(empty);
-      return;
+      const empty = document.createElement("p"); empty.textContent = "No domains yet. Add your first domain above."; list.append(empty);
     }
     for (const domain of payload.domains) {
-      const card = document.createElement("article");
-      card.className = "dash-card";
-      const heading = document.createElement("h3");
-      heading.textContent = domain.hostname;
-      const status = document.createElement("p");
-      status.textContent = "Status: " + domain.status.replaceAll("_", " ");
+      const card = document.createElement("article"); card.className = "dash-card";
+      const heading = document.createElement("h3"); heading.textContent = domain.hostname;
+      const status = document.createElement("p"); status.textContent = "Status: " + domain.status.replaceAll("_", " ");
       const countdown = document.createElement("p");
-      countdown.textContent = domain.expires_at
-        ? (domain.is_expired ? "Subscription expired" : domain.days_remaining + " day(s) remaining") + " · Expires " + new Date(domain.expires_at).toLocaleDateString()
-        : "Waiting for activation";
-      card.append(heading, status, countdown);
+      countdown.textContent = domain.expires_at ? (domain.is_expired ? "Subscription expired" : domain.days_remaining + " day(s) remaining") + " · Expires " + new Date(domain.expires_at).toLocaleDateString() : "Awaiting setup payment";
+      card.append(heading,status,countdown);
+      if (domain.status === "pending_payment" || domain.status === "suspended" || domain.status === "active") {
+        const button = document.createElement("button"); button.className = "auth-submit";
+        const purpose = domain.status === "pending_payment" ? "setup" : "renewal";
+        button.textContent = purpose === "setup" ? "Pay ₦16,000 setup →" : "Renew for ₦5,500 →";
+        button.addEventListener("click", async () => {
+          button.disabled = true; button.textContent = "Opening secure checkout…";
+          try {
+            const res = await fetch("/api/paystack/initialize", { method:"POST", headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"}, body:JSON.stringify({domain_id:domain.id,purpose}) });
+            const data = await res.json(); if (!res.ok || !data.authorization_url) throw new Error(data.error || "Checkout could not start.");
+            location.assign(data.authorization_url);
+          } catch(error) { showMessage(error.message,"error"); button.disabled=false; button.textContent=purpose==="setup"?"Pay ₦16,000 setup →":"Renew for ₦5,500 →"; }
+        });
+        card.append(button);
+      }
       list.append(card);
     }
-  } catch (error) {
-    summary.textContent = error.message || "Could not load billing details.";
-  }
+  } catch (error) { summary.textContent = error.message || "Could not load billing details."; }
 }
+const domainForm = $("domain-create-form");
+if (domainForm) domainForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = domainForm.querySelector("button[type=submit]");
+  const name = $("new-domain-name").value.trim().toLowerCase();
+  setBusy(button,true,"Creating domain…");
+  try {
+    const {data:sessionData}=await supabase.auth.getSession();
+    const response=await fetch("/api/domains/create",{method:"POST",headers:{Authorization:"Bearer "+sessionData.session.access_token,"Content-Type":"application/json"},body:JSON.stringify({name})});
+    const result=await response.json();
+    if(!response.ok)throw new Error(result.error||"Could not create domain.");
+    if(result.promo){showMessage("Your promotional domain has been created. Website publishing is the next step.");}
+    else {
+      const payment=await fetch("/api/paystack/initialize",{method:"POST",headers:{Authorization:"Bearer "+sessionData.session.access_token,"Content-Type":"application/json"},body:JSON.stringify({domain_id:result.domain.id,purpose:"setup"})});
+      const checkout=await payment.json(); if(!payment.ok||!checkout.authorization_url)throw new Error(checkout.error||"Could not start setup payment.");
+      location.assign(checkout.authorization_url); return;
+    }
+    $("new-domain-name").value="";
+    await loadBillingStatus();
+  }catch(error){showMessage(error.message,"error");}
+  finally{setBusy(button,false);}
+});
 
 if (signupForm || loginForm) {
   const { data } = await supabase.auth.getSession();
