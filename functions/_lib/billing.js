@@ -94,7 +94,7 @@ export async function deployPagesFiles(env,domain,files,options={}) {
   const result=await deployment.json();
   if(!deployment.ok||!result.success)throw new Error(result.errors?.[0]?.message||"Cloudflare could not publish this website.");
   if(options.suspension) {
-    await env.DB.prepare("UPDATE managed_domains SET status='suspended', suspended_deployment_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='active'").bind(result.result?.id||null,domain.id).run();
+    await env.DB.prepare("UPDATE managed_domains SET status='suspended', suspended_deployment_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='provisioning'").bind(result.result?.id||null,domain.id).run();
   } else {
     await env.DB.prepare("UPDATE managed_domains SET status='active', original_deployment_id=?, suspended_deployment_id=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(result.result?.id||null,domain.id).run();
   }
