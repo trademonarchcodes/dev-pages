@@ -80,7 +80,7 @@ function loadSharedReviewList(){
 loadSharedReviewList();
 document.getElementById("open-shared-review")?.addEventListener("click",()=>dialog.showModal());
 const sharedForm=document.getElementById("shared-review-form");
-sharedForm.addEventListener("submit",e=>{
+if(sharedForm) sharedForm.addEventListener("submit",e=>{
  e.preventDefault();const status=document.getElementById("shared-review-status"),submit=document.getElementById("shared-review-submit");
  if(!selectedSharedRating){status.textContent="Please choose a star rating.";return;}
  if(!sharedForm.reportValidity())return;
