@@ -158,34 +158,31 @@
   }
 
   async function signup() {
+    if (busy) return;
     const values = validateSignup();
     if (!values) {
       messageText("Please correct the highlighted fields.", "error");
       return;
     }
-    setBusy(true, "Creating account…");
-    messageText("Connecting securely to DEVPAGES…");
+    setBusy(true, "Creating...");
+    messageText("Creating your DEVPAGES account…");
     try {
-      const redirect = encodeURIComponent(PRODUCTION_URL + "/login.html?verified=1");
-      const result = await supabaseRequest("/auth/v1/signup?redirect_to=" + redirect, "POST", {
+      const result = await supabaseRequest("/auth/v1/signup", "POST", {
         email: values.email,
         password: values.password,
         data: { full_name: values.name }
       });
+      if (!result.access_token || !result.user) {
+        throw new Error("Your account was created, but email confirmation is still enabled in the authentication settings. Turn off Confirm email in Supabase, then try again.");
+      }
+      messageText("Account created. Taking you to login…", "success");
       form.reset();
       renderRules();
-      if (result.access_token) {
-        await createServerSession(result.access_token);
-        messageText("Your account is ready. Opening your workspace…", "success");
-        location.assign("/account.html");
-        return;
-      }
-      messageText("Your registration request was accepted. Check your inbox and spam folder for the verification email. If no email arrives, DEVPAGES email delivery must be configured.", "success");
+      location.assign("/login.html?created=1");
     } catch (error) {
       console.error("DEVPAGES sign-up:", error);
       messageText(authErrorMessage(error), "error");
-    } finally {
-      setBusy(false);
+      setBusy(false, "Create my account ↗");
     }
   }
 
@@ -312,8 +309,8 @@
       }
     }
     const params = new URLSearchParams(location.search);
-    if (params.get("verified") === "1") {
-      messageText("Email verification is complete. Sign in with your email and password to continue.", "success");
+    if (params.get("created") === "1") {
+      messageText("Your account has been created. Log in with your email and password to continue.", "success");
     } else if (params.get("password") === "updated") {
       messageText("Your password has been updated. Sign in with your new password.", "success");
     }
@@ -443,16 +440,7 @@
     bindPasswordButtons();
     if (passwordInput) passwordInput.addEventListener("input", renderRules);
     if (confirmInput) confirmInput.addEventListener("input", renderRules);
-    // Bind the primary action directly as well as the form submit event.
-    // This makes the CTA respond even if another page script interferes with submit handling.
-    if (page === "signup" && button) {
-      button.type = "button";
-      button.addEventListener("click", function (event) {
-        event.preventDefault();
-        event.stopPropagation();
-        if (!busy) void signup();
-      });
-    }
+    // The form submit event is the single signup/login entry point.
     if (form) {
       form.addEventListener("submit", function (event) {
         event.preventDefault();
