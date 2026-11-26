@@ -64,6 +64,12 @@ export async function provisionPagesProject(env, domain) {
   const response=await fetch("https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(domain.cloudflare_account_id)+"/pages/projects",{method:"POST",headers:{Authorization:"Bearer "+tokens.access_token,"Content-Type":"application/json"},body:JSON.stringify({name:domain.project_name,production_branch:"main"})});
   const result=await response.json();
   if(!response.ok||!result.success)throw new Error(result.errors?.[0]?.message||"Could not create the Pages project.");
+  const actualName=result.result?.name||domain.project_name;
+  if(actualName!==domain.project_name) {
+    await env.DB.prepare("UPDATE managed_domains SET project_name=?,hostname=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(actualName,actualName+".pages.dev",domain.id).run();
+    domain.project_name=actualName;
+    domain.hostname=actualName+".pages.dev";
+  }
   return true;
 }
 
