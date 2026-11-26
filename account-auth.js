@@ -357,7 +357,7 @@ async function loadBillingStatus(user) {
               });
               const ext = path.split(".").pop().toLowerCase();
               const mimeMap = {html:"text/html; charset=utf-8",htm:"text/html; charset=utf-8",css:"text/css; charset=utf-8",js:"text/javascript; charset=utf-8",mjs:"text/javascript; charset=utf-8",json:"application/json",svg:"image/svg+xml",png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg",webp:"image/webp",gif:"image/gif",ico:"image/x-icon",txt:"text/plain; charset=utf-8",xml:"application/xml",pdf:"application/pdf",woff:"font/woff",woff2:"font/woff2"};
-              files.push({path,content:base64,content_type:blob.type||mimeMap[ext]||"application/octet-stream"});
+              files.push({path,content:base64,content_type:mimeMap[ext]||blob.type||"application/octet-stream"});
               if (files.length > 1000) throw new Error("ZIP contains more than 1,000 files.");
             }
             if (!files.some(file => file.path.toLowerCase() === "index.html")) {
