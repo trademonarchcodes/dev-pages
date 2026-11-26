@@ -21,3 +21,6 @@
 .auth-field input.input-invalid{border-color:#ef6471;box-shadow:0 0 0 3px rgba(239,100,113,.1)}
 .auth-field input[aria-invalid="false"]{border-color:#263955}
 @media(max-width:520px){.password-rules{padding:12px}.password-rules li{font-size:11px}}
+
+/* Larger desktop account forms */
+@media (min-width: 768px){.auth-wrap{width:min(100%,560px)}.auth-panel{padding:clamp(38px,4vw,52px);border-radius:28px}.auth-brand{margin-bottom:32px}.auth-brand img{width:172px}.auth-panel h1{font-size:clamp(40px,4vw,48px)}.auth-copy{font-size:16px;margin-bottom:28px}.auth-form{gap:18px}.auth-field{gap:10px}.auth-field label{font-size:13px}.auth-field input{padding:17px 16px;font-size:16px}.auth-field .password-input-wrap input{padding-right:58px}.password-toggle{width:42px;height:42px;font-size:21px}.password-rules{padding:15px 16px}.password-rules li{font-size:13px}.auth-submit{padding:17px 20px;font-size:16px}.auth-links{font-size:14px;margin-top:24px}}
