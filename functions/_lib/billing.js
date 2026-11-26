@@ -63,7 +63,8 @@ export async function applyPayment(env, payment, transaction) {
   if (!domain) throw new Error("Domain record not found.");
   const already = await env.DB.prepare("SELECT status FROM domain_payments WHERE reference = ?").bind(payment.reference).first();
   if (already?.status === "success") return { already_processed: true };
-  if(payment.purpose === "setup") await provisionPagesProject(env,domain);\n  const base = payment.purpose === "renewal" && domain.expires_at && new Date(domain.expires_at).getTime() > now.getTime() ? new Date(domain.expires_at) : now;
+  if(payment.purpose === "setup") await provisionPagesProject(env,domain);
+  const base = payment.purpose === "renewal" && domain.expires_at && new Date(domain.expires_at).getTime() > now.getTime() ? new Date(domain.expires_at) : now;
   const expiry = new Date(base.getTime() + 30 * 86400000).toISOString();
   await env.DB.batch([
     env.DB.prepare("UPDATE domain_payments SET status='success', paid_at=CURRENT_TIMESTAMP WHERE reference=? AND status='pending'").bind(payment.reference),
