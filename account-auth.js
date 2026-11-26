@@ -351,7 +351,13 @@ async function loadBillingStatus(user) {
               files.push({path,content:base64,content_type:blob.type||mimeMap[ext]||"application/octet-stream"});
               if (files.length > 1000) throw new Error("ZIP contains more than 1,000 files.");
             }
-            if (!files.some(file => file.path.toLowerCase() === "index.html" || file.path.toLowerCase().endsWith("/index.html"))) throw new Error("Your ZIP must contain an index.html homepage.");
+            if (!files.some(file => file.path.toLowerCase() === "index.html")) {
+              const nestedIndex = files.find(file => file.path.toLowerCase().endsWith("/index.html"));
+              const prefix = nestedIndex?.path.split("/")[0];
+              if (!prefix || !files.every(file => file.path.startsWith(prefix + "/"))) throw new Error("Place index.html at the root of your website ZIP, or ZIP one single website folder.");
+              for (const file of files) file.path = file.path.slice(prefix.length + 1);
+            }
+            if (!files.some(file => file.path.toLowerCase() === "index.html")) throw new Error("Your ZIP must contain an index.html homepage at its root.");
             const response = await fetch("/api/domains/deploy", {method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({domain_id:domain.id,files})});
             const result = await response.json();
             if (!response.ok || !result.success) throw new Error(result.error || "Website publishing failed.");
