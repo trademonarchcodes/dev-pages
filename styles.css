@@ -74,3 +74,21 @@ p,.hero-lead,.section-heading p,.pricing-head p,.page-intro p,.notice-panel p,.p
 .auth-switch a,.auth-card .text-link{color:#80d7ff}
 .auth-utility{display:flex;justify-content:center;margin-top:16px}
 @media(max-width:520px){.auth-page{padding:45px 16px 65px}}
+
+
+/* Registration form: password visibility, live strength checklist and field feedback */
+.password-wrap{position:relative;display:flex;align-items:center}
+.auth-card .password-wrap input{padding-right:54px}
+.password-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:38px;height:38px;display:grid;place-items:center;border:0;background:transparent;color:#91a9c6;cursor:pointer;border-radius:5px}
+.password-toggle:hover,.password-toggle.is-visible{color:#70d9ff;background:#14263d}
+.password-toggle svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.password-rules{display:grid;grid-template-columns:1fr 1fr;gap:9px 12px;margin:13px 0 4px;padding:13px;background:#08111e;border:1px solid #233951;border-radius:6px}
+.password-rules div{display:flex;align-items:center;gap:8px;color:#ff9c9c;font-size:11px;line-height:1.4}
+.password-rules div span{display:inline-grid;place-items:center;width:17px;height:17px;border:1px solid #a44a59;border-radius:50%;font-size:11px;flex:none}
+.password-rules div.passed{color:#83e4b9}
+.password-rules div.passed span{border-color:#2b9b70;background:#123a30;color:#83e4b9}
+.auth-card .field-error{display:block;min-height:0;margin-top:5px;color:#ff8e9c;font-size:11px;line-height:1.45}
+.auth-card .field-error:empty{display:none}
+.auth-card input.input-invalid{border-color:#e35c70;box-shadow:0 0 0 2px #e35c7020}
+.auth-card input.input-valid{border-color:#3cba87}
+@media(max-width:480px){.password-rules{grid-template-columns:1fr}.password-rules div{font-size:11px}}
