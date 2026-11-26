@@ -30,3 +30,16 @@
 
 /* Wide desktop account experience */
 @media (min-width: 768px){.auth-shell{padding:64px 32px}.auth-wrap{width:min(100%,820px)}.auth-panel{padding:clamp(64px,6vw,82px);border-radius:34px}.auth-brand{margin-bottom:44px}.auth-brand img{width:210px}.auth-panel h1{font-size:clamp(54px,5vw,66px);margin:18px 0}.auth-copy{font-size:19px;line-height:1.8;margin-bottom:38px}.auth-form{gap:25px}.auth-field{gap:13px}.auth-field label{font-size:15px}.auth-field input{padding:23px 20px;font-size:19px;border-radius:16px}.auth-field .password-input-wrap input{padding-right:68px}.password-toggle{right:12px;width:50px;height:50px;font-size:25px}.password-rules{padding:20px 22px;border-radius:16px}.rules-heading{font-size:15px;margin-bottom:14px}.password-rules ul{gap:11px}.password-rules li{font-size:15px}.password-rules li .rule-icon{width:21px;height:21px;flex-basis:21px;font-size:12px}.field-error,.field-hint{font-size:14px}.auth-submit{padding:23px 24px;font-size:19px;border-radius:16px}.auth-links{font-size:16px;margin-top:32px}.auth-foot{font-size:14px;margin-top:30px}}
+
+/* Clear, balanced password requirement checklist */
+.password-rules{margin-top:12px;padding:18px;border:1px solid rgba(105,151,230,.2);background:linear-gradient(145deg,rgba(17,31,53,.9),rgba(7,15,29,.88));border-radius:16px}
+.rules-heading{display:flex;align-items:center;gap:9px;margin:0 0 14px;color:#dce8fb;font:600 14px 'Space Grotesk',sans-serif}
+.rules-heading:before{content:"";display:block;width:3px;height:17px;border-radius:4px;background:#5796ff}
+.password-rules ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.password-rules li{box-sizing:border-box;display:flex;align-items:center;gap:10px;min-width:0;min-height:44px;padding:10px 12px;border:1px solid rgba(126,154,194,.12);border-radius:10px;background:rgba(255,255,255,.025);color:#aebbd0;font:500 13px/1.4 'Space Grotesk',sans-serif;transition:background .18s ease,border-color .18s ease,color .18s ease}
+.password-rules li .rule-icon{box-sizing:border-box;width:20px;height:20px;flex:0 0 20px;border:1px solid #66758d;border-radius:50%;display:grid;place-items:center;color:#8797b0;font:700 12px/1 'Space Grotesk',sans-serif}
+.password-rules li.passed{color:#8ce4b8;border-color:rgba(70,205,142,.28);background:rgba(48,180,119,.075)}
+.password-rules li.passed .rule-icon{border-color:#39c98a;background:rgba(57,201,138,.14);color:#70e2aa}
+@media(max-width:600px){.password-rules{padding:14px}.password-rules ul{grid-template-columns:minmax(0,1fr);gap:7px}.password-rules li{min-height:40px;padding:9px 11px;font-size:12px}.password-rules li:last-child{grid-column:auto}}
+@media(min-width:768px){.password-rules{padding:22px 24px}.rules-heading{font-size:16px;margin-bottom:16px}.password-rules ul{gap:11px}.password-rules li{min-height:50px;padding:12px 14px;font-size:14px}.password-rules li .rule-icon{width:22px;height:22px;flex-basis:22px}}
+@media(min-width:601px){.password-rules li:last-child{grid-column:1/-1}}
