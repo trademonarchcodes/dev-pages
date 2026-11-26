@@ -339,8 +339,10 @@ async function loadBillingStatus(user) {
             const zip = await JSZip.loadAsync(archive);
             const files = [];
             for (const [path, entry] of Object.entries(zip.files)) {
-              if (entry.dir || path.startsWith("__MACOSX/") || path.endsWith(".DS_Store")) continue;
-              if (path.split("/").some(part => part === ".." || part === ".")) throw new Error("ZIP contains an unsafe file path.");
+              const parts = path.split("/");
+              if (entry.dir || path.startsWith("__MACOSX/") || path.endsWith(".DS_Store") || parts.some(part => [".git","node_modules",".wrangler","__MACOSX"].includes(part))) continue;
+              if (parts.some(part => part === ".." || part === ".")) throw new Error("ZIP contains an unsafe file path.");
+              if (path === "_worker.js" || path === "_worker.bundle" || path === "functions" || path.startsWith("functions/")) throw new Error("This ZIP contains a custom Worker or Pages Functions. DEVPAGES ZIP publishing currently supports static websites only.");
               const blob = await entry.async("blob");
               if (blob.size > 8 * 1024 * 1024) throw new Error("A website file is larger than 8 MB.");
               const base64 = await new Promise((resolve,reject) => {
