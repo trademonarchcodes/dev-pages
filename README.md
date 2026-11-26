@@ -1,58 +1,57 @@
 # DEVPAGES
 
-DEVPAGES is a platform whose primary launch offer is a free Cloudflare Pages subdomain (name.pages.dev), with optional paid custom-domain discovery and future website management.
+**Your domain. Your pages. Your choice.**
 
-## Implemented foundation
+DEVPAGES helps customers choose and manage an exact `name.pages.dev` address through their own Cloudflare account. A suggested name is never treated as reserved, and DEVPAGES never silently adds random characters.
 
-- Responsive dark/electric-blue public website, mobile navigation and launch countdown.
-- Production security headers, private API response caching rules and admin-page no-index controls.
-- Brand-name suggestions and indicative RDAP checks for .com, .net, .org and .io.
-- Customer workspace UI at /account.html and separate administrator console UI at /admin.html.
-- Cloudflare Pages Functions for email-code sign-in, session handling, customer dashboard data and role-guarded administrator summaries.
-- D1 production database created and bound to the Pages project as DEVPAGES_DB.
-- D1 schema applied to production, including users, sessions, one-time codes, hosting connections, sites, subscriptions, payments, domain orders and audit events.
-- Admin identity is configured to the verified mailbox devlyonofficial@gmail.com; administrator role is granted only after that mailbox completes email verification.
-- No customer can see another customer's rows; dashboard queries are scoped to the authenticated user and admin summaries enforce the admin role server-side.
+## Current product scope
 
-## Activation dependencies — not yet live
+- Public pages: Home, Find a name, Pricing, About, Help and Reviews.
+- Customer account: Supabase email/password authentication, verified-email flow, password recovery and a private dashboard.
+- Hosting connection: customers authorise their own Cloudflare account with a limited API token; DEVPAGES encrypts the token at rest.
+- Name check: checks whether an exact Pages project name already exists in the customer's connected Cloudflare account. This is account-scoped only; Cloudflare performs the final global availability check when a project is created.
+- Admin console: server-side role checks and customer/platform summaries.
 
-The account backend is deployed, but public sign-in cannot be enabled until the following are configured:
-1. A verified sending domain in Cloudflare Email Service (the Cloudflare account currently has no zones/verified sender domain).
-2. A Cloudflare API token with Email Sending Write permission, stored as the Pages secret CF_EMAIL_API_TOKEN.
-3. A strong random AUTH_PEPPER and SESSION_SECRET, both stored as Pages secrets. Never commit these values to GitHub or send them in chat.
-4. EMAIL_FROM set to an address on the verified sending domain.
-5. Test email delivery, OTP expiry/attempt limits, session cookies and administrator role before inviting customers.
+## Architecture
 
-The health endpoint reports configuration readiness without disclosing secret values. Until email delivery and the two cryptographic secrets are configured, the sign-in API intentionally fails closed.
+- **Cloudflare Pages** serves the static site and Pages Functions.
+- **Supabase Auth** handles registration, email verification, login and password recovery. The browser calls the Supabase Auth REST API directly; there is no Firebase SDK and no remote ES-module CDN dependency in the auth flow.
+- **Cloudflare D1** stores DEVPAGES customer records, server sessions, hosting connections, sites, orders, payments and audit events. D1 remains in place deliberately; the Supabase project is currently the authentication provider, not the application-data database.
+- Cloudflare API tokens supplied by customers are encrypted with AES-GCM using the Pages secret `TOKEN_ENCRYPTION_KEY`. Tokens are never returned to the browser.
 
-## Still required for full commercial launch
+## Required production configuration
 
-- Cloudflare OAuth app registration/publisher verification and customer consent for each customer's own Cloudflare account.
-- Secure customer Cloudflare OAuth callback, encrypted token storage, revocation and Pages project creation. Customers must see Cloudflare's real authorisation consent; DEVPAGES will not collect Cloudflare passwords.
-- Registrar API support validation and actual domain registration purchase flow.
-- Paystack onboarding, API secret and verified payment webhooks.
-- Domain checkout, registrar cost pass-through + $3 DEVPAGES markup + payment processing fee, receipts and refunds.
-- Automated renewals, expiries, service suspension/reactivation, support tools, abuse controls, audit review and backups.
+1. Supabase Auth Site URL: `https://devpagesdomain.pages.dev`.
+2. Supabase redirect allow-list must include the production login and password-reset URLs.
+3. Configure custom SMTP in Supabase before opening registration to the public. Supabase's default SMTP service is restricted to approved project-team email addresses and is not a production email service.
+4. Cloudflare Pages production bindings: `DEVPAGES_DB` and the secrets `SESSION_SECRET` and `TOKEN_ENCRYPTION_KEY`. `ADMIN_EMAIL` identifies the administrator mailbox.
+5. After SMTP is configured, test registration, email verification, login, logout and password recovery using an ordinary non-team email address.
+
+Never put Supabase secret/service-role keys, Cloudflare API tokens, payment keys or cryptographic secrets in frontend files or GitHub.
+
+## Not launched yet
+
+Website project creation/deployment, subscription billing, Paystack checkout, automated renewals and paid registrar purchases remain disabled. The planned Pages.dev offer is free during the launch promotion; after the promotion, the intended price is $10 one-time address setup plus $3 monthly service. Payment collection is not active.
+
+DEVPAGES currently supports `name.pages.dev` only. It does not sell or register .com, .net or other custom domains.
 
 ## Deployment
 
-The site deploys from the main branch with repository root as the build output directory and no build command. Production URL: https://devpagesdomain.pages.dev.
+- Repository: `trademonarchcodes/dev-pages`
+- Production branch: `main`
+- Build command: none
+- Output directory: repository root
+- Production URL: https://devpagesdomain.pages.dev
 
-The D1 database is already created and the migration has been applied. The Pages project has the production D1 binding DEVPAGES_DB. Do not delete or recreate the database.
+Do not delete or recreate the production D1 database. Existing user, hosting, order and audit relationships depend on its current schema.
 
-## Custom-domain pricing
+## Security principles
 
-The intended pricing rule is the registrar's live registration price + a fixed $3 DEVPAGES markup + applicable payment-processing fee. Renewal price is separate and must be displayed before purchase. Never hardcode sample registrar prices. The current RDAP fallback is indicative only and must never be presented as confirmed availability or a purchasable quote.
-
-## Pages.dev offer
-
-The primary advertised offer is a `name.pages.dev` Cloudflare Pages subdomain, free during the launch promotion. This is not a separately registered domain. Cloudflare Pages project names are globally unique; a suggested name is not reserved. A real customer claim must be completed by creating a Pages project in the customer's own authorised Cloudflare account. Optional .com, .net, .org and .io registrations are separate paid services.
-
-## Security rules
-
-- Never ask customers for Cloudflare passwords.
-- Use official Cloudflare OAuth consent and explain the provider clearly.
-- Keep provider tokens and payment secrets server-side; encrypt tokens at rest.
-- Verify payment events server-side before changing order or subscription status.
-- Enforce ownership in every API query and admin role checks on the server.
-- Never suspend or delete a site based only on an unverified browser-side payment status.
+- Never ask customers for their Cloudflare passwords.
+- Explain the Cloudflare authorisation clearly and request only the required Pages permission.
+- Verify Supabase access tokens on the server before creating a DEVPAGES session.
+- Keep the DEVPAGES session cookie HttpOnly, Secure and SameSite=Lax.
+- Enforce user ownership in every customer API query and enforce admin roles on the server.
+- Encrypt customer Cloudflare tokens at rest and never return them to the browser.
+- Verify payment webhooks server-side before changing order or subscription state.
+- Do not claim a Pages name is reserved or globally available until Cloudflare confirms it during project creation.
