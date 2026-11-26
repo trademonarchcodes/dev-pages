@@ -175,7 +175,7 @@ async function register() {
   const confirm = confirmInput?.value || "";
   let valid = true;
   if (name.length < 2) { $("#name-error").textContent = "Please enter your full name."; nameInput?.classList.add("input-invalid"); valid = false; }
-  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) { $("#email-error").textContent = "Enter a valid email address."; emailInput.classList.add("input-invalid"); valid = false; }
+  if (!email.includes("@") || !email.includes(".") || /\s/.test(email)) { $("#email-error").textContent = "Enter a valid email address."; emailInput.classList.add("input-invalid"); valid = false; }
   const checks = passwordChecks(password);
   if (Object.values(checks).some(passed => !passed)) { $("#password-error").textContent = "Your password must meet every requirement above."; passwordInput.classList.add("input-invalid"); valid = false; }
   if (confirm !== password || !confirm) { $("#confirm-error").textContent = "Passwords do not match."; confirmInput?.classList.add("input-invalid"); valid = false; }
