@@ -92,3 +92,22 @@ p,.hero-lead,.section-heading p,.pricing-head p,.page-intro p,.notice-panel p,.p
 .auth-card input.input-invalid{border-color:#e35c70;box-shadow:0 0 0 2px #e35c7020}
 .auth-card input.input-valid{border-color:#3cba87}
 @media(max-width:480px){.password-rules{grid-template-columns:1fr}.password-rules div{font-size:11px}}
+
+
+/* Signup CTA: high-contrast, accessible, full-width action */
+.auth-card .signup-submit{
+  position:relative;display:flex;align-items:center;justify-content:center;gap:12px;
+  min-height:56px;margin-top:2px;padding:16px 22px;width:100%;
+  border:1px solid rgba(141,220,255,.8);border-radius:8px;
+  background:linear-gradient(110deg,#70e3ff 0%,#4c9dff 55%,#3978f5 100%);
+  color:#06101e;font:700 15px var(--sans);letter-spacing:.01em;
+  box-shadow:0 8px 28px rgba(55,145,255,.2),inset 0 1px 0 rgba(255,255,255,.45);
+  cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,filter .18s ease;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
+}
+.auth-card .signup-submit span{font-size:19px;transition:transform .18s ease}
+.auth-card .signup-submit:hover{filter:brightness(1.08);transform:translateY(-2px);box-shadow:0 12px 34px rgba(55,145,255,.3)}
+.auth-card .signup-submit:hover span{transform:translate(3px,-2px)}
+.auth-card .signup-submit:active{transform:scale(.985)}
+.auth-card .signup-submit:focus-visible{outline:3px solid #d5f5ff;outline-offset:3px}
+.auth-card .signup-submit:disabled{opacity:.7;filter:saturate(.7);transform:none;cursor:wait;box-shadow:none}
