@@ -293,8 +293,8 @@ async function loadBillingStatus(user) {
       domainForm.style.opacity = payload.account.hosting_connected ? "1" : ".45";
     }
     if (connectButton) {
-      connectButton.textContent = payload.account.hosting_connected ? "Cloudflare account connected ✓" : "Connect my Cloudflare account →";
-      connectButton.disabled = Boolean(payload.account.hosting_connected);
+      connectButton.textContent = payload.account.hosting_connected ? "Reconnect Cloudflare account ↻" : "Connect my Cloudflare account →";
+      connectButton.disabled = false;
     }
     summary.textContent = !payload.account.hosting_connected
       ? "Hosting is locked. Connect your Cloudflare account above to unlock domain creation and website publishing."
@@ -326,7 +326,7 @@ async function loadBillingStatus(user) {
         });
         card.append(button);
       }
-      if (domain.status === "active") {
+      if (domain.status === "active" || domain.status === "provisioning") {
         const upload = document.createElement("input");
         upload.type = "file"; upload.accept = ".zip,application/zip"; upload.setAttribute("aria-label","Choose website ZIP");
         upload.style.cssText = "display:block;margin-top:12px;max-width:100%";
