@@ -61,6 +61,69 @@ export async function provisionPagesProject(env, domain) {
   if(!response.ok||!result.success)throw new Error(result.errors?.[0]?.message||"Could not create the Pages project.");
   return true;
 }
+
+const BLAKE3_IV=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+const BLAKE3_PERM=[2,6,3,10,7,0,4,13,1,11,12,5,9,14,15,8];
+function b3rotr(x,n){return (x>>>n)|(x<<(32-n));}
+function b3g(s,a,b,c,d,mx,my){
+  s[a]=(s[a]+s[b]+mx)>>>0;s[d]=b3rotr(s[d]^s[a],16);
+  s[c]=(s[c]+s[d])>>>0;s[b]=b3rotr(s[b]^s[c],12);
+  s[a]=(s[a]+s[b]+my)>>>0;s[d]=b3rotr(s[d]^s[a],8);
+  s[c]=(s[c]+s[d])>>>0;s[b]=b3rotr(s[b]^s[c],7);
+}
+function b3round(s,m){
+  b3g(s,0,4,8,12,m[0],m[1]);b3g(s,1,5,9,13,m[2],m[3]);b3g(s,2,6,10,14,m[4],m[5]);b3g(s,3,7,11,15,m[6],m[7]);
+  b3g(s,0,5,10,15,m[8],m[9]);b3g(s,1,6,11,12,m[10],m[11]);b3g(s,2,7,8,13,m[12],m[13]);b3g(s,3,4,9,14,m[14],m[15]);
+}
+function b3compress(cv,block,counter,blockLen,flags){
+  const s=new Uint32Array(16);s.set(cv,0);s.set(BLAKE3_IV.slice(0,4),8);
+  s[12]=counter>>>0;s[13]=Math.floor(counter/0x100000000);s[14]=blockLen;s[15]=flags;
+  let m=block;
+  for(let r=0;r<7;r++){b3round(s,m);m=BLAKE3_PERM.map(i=>m[i]);}
+  const out=new Uint32Array(16);
+  for(let i=0;i<8;i++){out[i]=s[i]^s[i+8];out[i+8]=s[i+8]^cv[i];}
+  return out;
+}
+function b3words(bytes){
+  const w=new Uint32Array(16);
+  for(let i=0;i<bytes.length;i++)w[i>>>2]|=bytes[i]<<((i&3)*8);
+  return w;
+}
+function b3output(cv,block,counter,blockLen,flags){
+  return {
+    chainingValue(){return b3compress(cv,block,counter,blockLen,flags).slice(0,8);},
+    rootHex(){
+      const out=b3compress(cv,block,0,blockLen,flags|8);let hex="";
+      for(let i=0;i<8;i++)hex+=out[i].toString(16).padStart(8,"0").match(/../g).reverse().join("");
+      return hex;
+    }
+  };
+}
+function b3chunk(chunk,counter){
+  let cv=BLAKE3_IV;const blocks=Math.max(1,Math.ceil(chunk.length/64));
+  for(let i=0;i<blocks;i++){
+    const part=chunk.subarray(i*64,Math.min((i+1)*64,chunk.length));
+    const flags=(i===0?1:0)|(i===blocks-1?2:0);const block=b3words(part);
+    if(i===blocks-1)return b3output(cv,block,counter,part.length,flags);
+    cv=b3compress(cv,block,counter,64,flags).slice(0,8);
+  }
+}
+function b3parent(left,right){
+  const block=new Uint32Array(16);block.set(left,0);block.set(right,8);
+  return b3output(BLAKE3_IV,block,0,64,4);
+}
+function blake3Hex(value){
+  const bytes=new TextEncoder().encode(value);const count=Math.max(1,Math.ceil(bytes.length/1024));const stack=[];
+  for(let i=0;i<count-1;i++){
+    let cv=b3chunk(bytes.subarray(i*1024,(i+1)*1024),i).chainingValue();let total=i+1;
+    while((total&1)===0){cv=b3parent(stack.pop(),cv).chainingValue();total=Math.floor(total/2);}
+    stack.push(cv);
+  }
+  let out=b3chunk(bytes.subarray((count-1)*1024),count-1);
+  while(stack.length)out=b3parent(stack.pop(),out.chainingValue());
+  return out.rootHex();
+}
+
 export async function deployPagesFiles(env,domain,files,options={}) {
   const {tokens}=await getCloudflareAccessToken(env,domain.user_id);
   const base="https://api.cloudflare.com/client/v4";
@@ -73,10 +136,9 @@ export async function deployPagesFiles(env,domain,files,options={}) {
   const manifest={};
   const uploadItems=[];
   for(const file of files) {
-    const path=file.path.replace(/^\/+/, "");
-    const bytes=Uint8Array.from(atob(file.content),ch=>ch.charCodeAt(0));
-    const digest=await crypto.subtle.digest("SHA-256",bytes);
-    const hash=[...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,"0")).join("");
+    const path="/"+file.path.replace(/^\/+/, "");
+    const extension=path.slice(path.lastIndexOf(".")+1);
+    const hash=blake3Hex(file.content+extension).slice(0,32);
     const mime=file.content_type||"application/octet-stream";
     manifest[path]=hash;
     uploadItems.push({key:hash,value:file.content,base64:true,metadata:{contentType:mime}});
@@ -86,6 +148,9 @@ export async function deployPagesFiles(env,domain,files,options={}) {
     const data=await uploaded.json();
     if(!uploaded.ok||!data.success)throw new Error(data.errors?.[0]?.message||"Cloudflare rejected one or more website files.");
   }
+  const registered=await fetch(base+"/pages/assets/upsert-hashes",{method:"POST",headers:{Authorization:"Bearer "+uploadToken,"Content-Type":"application/json"},body:JSON.stringify({hashes:Object.values(manifest)})});
+  const registeredData=await registered.json();
+  if(!registered.ok||!registeredData.success)throw new Error(registeredData.errors?.[0]?.message||"Cloudflare could not register uploaded website assets.");
   const form=new FormData();
   form.set("manifest",JSON.stringify(manifest));
   form.set("branch","main");
