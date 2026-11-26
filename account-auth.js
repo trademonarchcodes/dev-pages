@@ -211,15 +211,41 @@ document.querySelectorAll("[data-toggle-password]").forEach(button => {
     button.classList.toggle("is-visible", reveal);
   });
 });
-form?.addEventListener("submit", async event => {
-  event.preventDefault();
+async function handleRegistration(event) {
+  event?.preventDefault();
+  event?.stopPropagation();
   if (busy) return;
-  if (authPage === "signup") {
-    setBusy(true); note("Creating your DEVPAGES account…");
-    try { await register(); } catch(error) { note(error.message || "Could not create your account.", true); }
-    finally { setBusy(false); }
-  } else if (signInButton) signInButton.click();
-});
+  setBusy(true);
+  note("Creating your DEVPAGES account…");
+  try {
+    await register();
+  } catch (error) {
+    console.error("DEVPAGES registration failed:", error);
+    const code = error?.code || "";
+    const friendly = {
+      "auth/email-already-in-use": "An account already exists with this email. Please log in instead.",
+      "auth/invalid-email": "Please enter a valid email address.",
+      "auth/weak-password": "Your password does not meet Firebase security requirements.",
+      "auth/network-request-failed": "Connection problem. Check your internet and try again.",
+      "auth/operation-not-allowed": "Email and password registration is not enabled in Firebase yet."
+    };
+    note(friendly[code] || error.message || "Registration failed. Please try again.", true);
+  } finally {
+    setBusy(false);
+  }
+}
+if (authPage === "signup") {
+  createButton?.addEventListener("click", handleRegistration);
+  form?.addEventListener("submit", event => {
+    event.preventDefault();
+    if (!busy) createButton?.click();
+  });
+} else {
+  form?.addEventListener("submit", event => {
+    event.preventDefault();
+    signInButton?.click();
+  });
+}
 signInButton?.addEventListener("click", async () => {
   if (busy) return;
   setBusy(true); note("Signing you in…");
