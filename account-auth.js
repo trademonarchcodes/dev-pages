@@ -316,6 +316,19 @@ async function loadBillingStatus(user) {
       }
       list.append(card);
     }
+    const history = $("payment-history");
+    if (history) {
+      history.replaceChildren();
+      if (!payload.payment_history?.length) {
+        const empty = document.createElement("p"); empty.textContent = "No payments recorded yet."; history.append(empty);
+      } else {
+        for (const payment of payload.payment_history) {
+          const row = document.createElement("p");
+          row.textContent = money(payment.amount_kobo / 100) + " · " + payment.purpose + " · " + payment.status + " · " + new Date(payment.created_at).toLocaleDateString();
+          history.append(row);
+        }
+      }
+    }
   } catch (error) { summary.textContent = error.message || "Could not load billing details."; }
 }
 const domainForm = $("domain-create-form");
