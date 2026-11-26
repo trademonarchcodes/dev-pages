@@ -31,7 +31,17 @@ async function refresh(){
           const row=document.createElement("div");row.className="account-data-row";
           const left=document.createElement("div");const strong=document.createElement("strong");strong.textContent="Cloudflare account";
           const small=document.createElement("small");small.textContent="Account ID: "+item.provider_account_id;left.append(strong,small);
-          const status=document.createElement("span");status.textContent="Connected";row.append(left,status);hostingBox.append(row);
+          const disconnect=document.createElement("button");disconnect.type="button";disconnect.className="text-link";disconnect.textContent="Disconnect";
+          disconnect.addEventListener("click",async()=>{
+            if(!window.confirm("Disconnect this Cloudflare account from DEVPAGES? You should also revoke its API token in Cloudflare."))return;
+            disconnect.disabled=true;disconnect.textContent="Disconnecting…";
+            try{
+              const response=await fetch("/api/hosting/disconnect",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({accountId:item.provider_account_id})});
+              const result=await response.json();if(!response.ok||!result.ok)throw new Error(result.message||"Could not disconnect.");
+              await refresh();
+            }catch(error){window.alert(error.message||"Could not disconnect this account.");disconnect.disabled=false;disconnect.textContent="Disconnect";}
+          });
+          row.append(left,disconnect);hostingBox.append(row);
         });
         const intro=document.getElementById("hosting-empty-copy");if(intro)intro.hidden=true;
       }else{
