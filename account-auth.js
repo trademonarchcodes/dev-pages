@@ -264,8 +264,10 @@ if (signout) {
 if ($("account-name")) {
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) {
-    location.replace("/login.html");
+    location.replace("/signup.html");
   } else {
+    const dashboard = $("private-dashboard");
+    if (dashboard) dashboard.hidden = false;
     const user = data.user;
     const displayName = user.user_metadata?.full_name || user.email?.split("@")[0] || "there";
     $("account-name").textContent = displayName;
