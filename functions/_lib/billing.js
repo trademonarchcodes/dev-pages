@@ -15,6 +15,11 @@ export function isPromoUser(user) {
   const created = new Date(user.created_at).getTime();
   return created >= Date.parse(PROMO_START) && created < Date.parse(PROMO_END);
 }
+export function isPaystackKeyAllowed(env) {
+  const mode=(env.PAYSTACK_MODE||"test").toLowerCase();
+  if(mode!=="test"&&mode!=="live")return false;
+  return Boolean(env.PAYSTACK_SECRET_KEY&&env.PAYSTACK_SECRET_KEY.startsWith(mode==="live"?"sk_live_":"sk_test_"));
+}
 export async function verifyPaystack(reference, secret) {
   const response = await fetch("https://api.paystack.co/transaction/verify/" + encodeURIComponent(reference), { headers: { Authorization: "Bearer " + secret, Accept: "application/json" } });
   const data = await response.json();
