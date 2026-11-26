@@ -8,7 +8,9 @@ export async function onRequestPost({ request, env }) {
     const body = await request.json();
     const domainId = String(body.domain_id || "");
     const purpose = body.purpose === "renewal" ? "renewal" : "setup";
-    const domain = await env.DB.prepare("SELECT id, user_id, status, expires_at FROM managed_domains WHERE id=? AND user_id=?").bind(domainId, user.id).first();\n    const hosting = await env.DB.prepare("SELECT user_id FROM cloudflare_connections WHERE user_id=?").bind(user.id).first();\n    if (!hosting) return json({ error: "Reconnect your Cloudflare account before paying or renewing hosting." }, 409);
+    const domain = await env.DB.prepare("SELECT id, user_id, status, expires_at FROM managed_domains WHERE id=? AND user_id=?").bind(domainId, user.id).first();
+    const hosting = await env.DB.prepare("SELECT user_id FROM cloudflare_connections WHERE user_id=?").bind(user.id).first();
+    if (!hosting) return json({ error: "Reconnect your Cloudflare account before paying or renewing hosting." }, 409);
     if (!domain) return json({ error: "Domain not found." }, 404);
     if (isPromoUser(user) && Date.now() < Date.parse("2027-01-16T00:00:00.000Z")) return json({ error: "Your launch promotion is active. No payment is due yet." }, 409);
     if (purpose === "setup" && domain.status !== "pending_payment") return json({ error: "Setup payment is not due for this domain." }, 409);
