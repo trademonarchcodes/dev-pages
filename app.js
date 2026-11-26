@@ -24,13 +24,13 @@ function renderResults(items,registrarConnected){
   const card=document.createElement("article");card.className="domain-result";
   const name=document.createElement("strong");name.textContent=item.domain;
   const status=document.createElement("span");status.className="domain-status "+(item.status==="available"?"available":item.status==="registered"?"taken":"unknown");
-  status.textContent=item.status==="available"?"Available — unconfirmed price":item.status==="registered"?"Registered":item.status==="unsupported"?"Not supported":"Unconfirmed";
+  status.textContent=item.status==="available"?(item.customerPrice!==null&&item.customerPrice!==undefined?"Registrar reports available":"Availability reported") :item.status==="registered"?"Registered":item.status==="unsupported"?"Not supported":"Unconfirmed";
   const detail=document.createElement("small");
   if(item.status==="available"&&item.customerPrice!==null&&item.customerPrice!==undefined){
    const renewal=item.customerRenewalEstimate!==null&&item.customerRenewalEstimate!==undefined?` · renewal estimate $${item.customerRenewalEstimate.toFixed(2)}`:"";
-   detail.textContent=`First year $${item.customerPrice.toFixed(2)} (includes $3 DEVPAGES fee)${renewal}. Final price is checked again at checkout.`;
+   detail.textContent=`First year ${item.currency||"USD"} ${item.customerPrice.toFixed(2)} (includes the $3 DEVPAGES fee)${renewal}. Final price and availability must be checked again before purchase.`;
   }else if(item.status==="available"){
-   detail.textContent="A registry record was not found. Connect the registrar for confirmed availability and live pricing.";
+   detail.textContent="The registrar reports availability, but has not returned a usable price. No purchase can be made until a final quote is available.";
   }else if(item.status==="registered"){
    detail.textContent="The registrar reports that this name cannot currently be registered.";
   }else{
