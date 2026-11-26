@@ -363,7 +363,9 @@ async function loadBillingStatus(user) {
               if (!prefix || !files.every(file => file.path.startsWith(prefix + "/"))) throw new Error("Place index.html at the root of your website ZIP, or ZIP one single website folder.");
               for (const file of files) file.path = file.path.slice(prefix.length + 1);
             }
-            if (!files.some(file => file.path.toLowerCase() === "index.html")) throw new Error("Your ZIP must contain an index.html homepage at its root.");
+            const homepage = files.find(file => file.path.toLowerCase() === "index.html");
+            if (homepage) homepage.path = "index.html";
+            if (!homepage) throw new Error("Your ZIP must contain an index.html homepage at its root.");
             const response = await fetch("/api/domains/deploy", {method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({domain_id:domain.id,files})});
             const result = await response.json();
             if (!response.ok || !result.success) throw new Error(result.error || "Website publishing failed.");
