@@ -182,7 +182,11 @@ export async function applyPayment(env, payment, transaction) {
   if(!lock.meta?.changes) {
     const latest=await env.DB.prepare("SELECT status FROM domain_payments WHERE reference=?").bind(payment.reference).first();
     if(latest?.status==="success")return {already_processed:true};
-    throw new Error("This payment is already being processed. Wait a moment and refresh your dashboard.");
+    const held=await env.DB.prepare("SELECT processed_at FROM billing_webhook_events WHERE event_id=?").bind(lockId).first();
+    const heldAt=held?.processed_at?Date.parse(held.processed_at.replace(" ","T")+"Z"):NaN;
+    if(!Number.isFinite(heldAt)||Date.now()-heldAt<120000)throw new Error("This payment is already being processed. Wait a moment and refresh your dashboard.");
+    const takeover=await env.DB.prepare("UPDATE billing_webhook_events SET processed_at=CURRENT_TIMESTAMP WHERE event_id=? AND processed_at=?").bind(lockId,held.processed_at).run();
+    if(!takeover.meta?.changes)throw new Error("This payment is already being processed. Wait a moment and refresh your dashboard.");
   }
   try {
     const now = new Date();
