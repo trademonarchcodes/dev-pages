@@ -19,7 +19,6 @@ function suggestNames(value){
  return [...new Set([...extensions.map(ext=>base+ext),`get${base}.com`,`try${base}.com`,`${base}hq.com`,`${base}hub.com`])].slice(0,8);
 }
 function renderResults(items,registrarConnected){
- results.replaceChildren();
  for(const item of items){
   const card=document.createElement("article");card.className="domain-result";
   const name=document.createElement("strong");name.textContent=item.domain;
