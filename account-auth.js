@@ -271,6 +271,48 @@ if ($("account-name")) {
     $("account-name").textContent = displayName;
     $("account-email").textContent = user.email || "Email unavailable";
     $("account-status").textContent = user.email_confirmed_at ? "Email verified" : "Email confirmation pending";
+    await loadBillingStatus(data.user);
+  }
+}
+
+async function loadBillingStatus(user) {
+  const summary = $("billing-summary");
+  const list = $("domain-list");
+  if (!summary || !list) return;
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const response = await fetch("/api/billing/status", {
+      headers: { Authorization: "Bearer " + sessionData.session.access_token }
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "Billing details unavailable.");
+    const money = (value) => "₦" + Number(value).toLocaleString("en-NG");
+    summary.textContent = payload.account.promo_eligible && payload.promotion.active
+      ? "Launch promotion active until 16 January 2027. Your countdown continues."
+      : "Per domain: " + money(payload.pricing.setup_ngn) + " setup + " + money(payload.pricing.renewal_ngn) + " every 30 days.";
+    list.replaceChildren();
+    if (!payload.domains.length) {
+      const empty = document.createElement("p");
+      empty.textContent = "No domains have been added to your account yet.";
+      list.append(empty);
+      return;
+    }
+    for (const domain of payload.domains) {
+      const card = document.createElement("article");
+      card.className = "dash-card";
+      const heading = document.createElement("h3");
+      heading.textContent = domain.hostname;
+      const status = document.createElement("p");
+      status.textContent = "Status: " + domain.status.replaceAll("_", " ");
+      const countdown = document.createElement("p");
+      countdown.textContent = domain.expires_at
+        ? (domain.is_expired ? "Subscription expired" : domain.days_remaining + " day(s) remaining") + " · Expires " + new Date(domain.expires_at).toLocaleDateString()
+        : "Waiting for activation";
+      card.append(heading, status, countdown);
+      list.append(card);
+    }
+  } catch (error) {
+    summary.textContent = error.message || "Could not load billing details.";
   }
 }
 
