@@ -61,7 +61,7 @@ export async function provisionPagesProject(env, domain) {
   if(!response.ok||!result.success)throw new Error(result.errors?.[0]?.message||"Could not create the Pages project.");
   return true;
 }
-export async function deployPagesFiles(env,domain,files) {
+export async function deployPagesFiles(env,domain,files,options={}) {
   const {tokens}=await getCloudflareAccessToken(env,domain.user_id);
   const base="https://api.cloudflare.com/client/v4";
   const auth={Authorization:"Bearer "+tokens.access_token};
@@ -93,7 +93,11 @@ export async function deployPagesFiles(env,domain,files) {
   const deployment=await fetch(base+projectPath+"/deployments",{method:"POST",headers:auth,body:form});
   const result=await deployment.json();
   if(!deployment.ok||!result.success)throw new Error(result.errors?.[0]?.message||"Cloudflare could not publish this website.");
-  await env.DB.prepare("UPDATE managed_domains SET status='active', original_deployment_id=?, suspended_deployment_id=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(result.result?.id||null,domain.id).run();
+  if(options.suspension) {
+    await env.DB.prepare("UPDATE managed_domains SET status='suspended', suspended_deployment_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='active'").bind(result.result?.id||null,domain.id).run();
+  } else {
+    await env.DB.prepare("UPDATE managed_domains SET status='active', original_deployment_id=?, suspended_deployment_id=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(result.result?.id||null,domain.id).run();
+  }
   return result.result||{};
 }
 export async function applyPayment(env, payment, transaction) {
