@@ -1,312 +1,227 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
 import {
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  sendEmailVerification, sendPasswordResetEmail, updateProfile, signOut
+  sendEmailVerification, sendPasswordResetEmail, updateProfile
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBo8SJlX8gLdXe3hzBaa3q3I_2pAC9IKLo",
+  apiKey: "AIzaSyBo8SJxL8XgLdXe3hzBaa3q3I_2pAC9IKLo",
   authDomain: "devpagesdomain.firebaseapp.com",
   projectId: "devpagesdomain",
   storageBucket: "devpagesdomain.firebasestorage.app",
   messagingSenderId: "972778411264",
   appId: "1:972778411264:web:f14661c077767046da0fe5"
 };
-
-const $ = (selector) => document.querySelector(selector);
+const $ = (s, root=document) => root.querySelector(s);
+const page = location.pathname.endsWith("/signup.html") ? "signup" :
+             location.pathname.endsWith("/login.html") ? "login" : "dashboard";
 const form = $("#account-auth-form");
 const message = $("#auth-message");
-const submitButton = $("#create-account") || $("#sign-in");
+const button = $("#create-account") || $("#sign-in");
 const emailInput = $("#account-email");
 const passwordInput = $("#account-password");
 const nameInput = $("#account-name");
 const confirmInput = $("#confirm-password");
-const page = location.pathname.endsWith("/signup.html") ? "signup" :
-             location.pathname.endsWith("/login.html") ? "login" : "dashboard";
-let auth;
+let auth = null;
 let busy = false;
 
-function showMessage(text, type = "info") {
+function messageText(text, kind="info") {
   if (!message) return;
   message.textContent = text;
-  message.classList.toggle("error", type === "error");
-  message.classList.toggle("success", type === "success");
+  message.classList.toggle("error", kind==="error");
+  message.classList.toggle("success", kind==="success");
 }
 function setBusy(value, label) {
   busy = value;
-  if (!submitButton) return;
-  submitButton.disabled = value;
+  if (!button) return;
   if (value) {
-    submitButton.dataset.originalText ||= submitButton.textContent;
-    submitButton.textContent = label;
+    button.dataset.label ||= button.textContent;
+    button.disabled = true;
+    button.textContent = label;
   } else {
-    submitButton.textContent = submitButton.dataset.originalText || submitButton.textContent;
+    button.disabled = false;
+    button.textContent = button.dataset.label || button.textContent;
   }
 }
-function passwordRules(value) {
+function rules(value) {
   return {
-    length: value.length >= 8,
-    upper: /[A-Z]/.test(value),
-    lower: /[a-z]/.test(value),
-    number: /[0-9]/.test(value),
-    special: /[^A-Za-z0-9]/.test(value)
+    length:value.length>=8, upper:/[A-Z]/.test(value), lower:/[a-z]/.test(value),
+    number:/[0-9]/.test(value), special:/[^A-Za-z0-9]/.test(value)
   };
 }
-function renderPasswordRules() {
-  if (!passwordInput) return;
-  const rules = passwordRules(passwordInput.value);
-  Object.entries(rules).forEach(([key, passed]) => {
-    const item = document.querySelector('[data-rule="' + key + '"]');
-    if (!item) return;
-    item.classList.toggle("passed", passed);
-    const mark = item.querySelector("span");
-    if (mark) mark.textContent = passed ? "✓" : "○";
+function renderRules() {
+  const result = rules(passwordInput?.value || "");
+  Object.entries(result).forEach(([key,ok]) => {
+    const node = $('[data-rule="'+key+'"]');
+    if (!node) return;
+    node.classList.toggle("passed",ok);
+    const mark=$("span",node); if(mark) mark.textContent=ok?"✓":"○";
   });
-  if (confirmInput && confirmInput.value) {
-    const matches = confirmInput.value === passwordInput.value;
-    confirmInput.classList.toggle("input-invalid", !matches);
-    confirmInput.classList.toggle("input-valid", matches);
-    const error = $("#confirm-error");
-    if (error) error.textContent = matches ? "" : "Passwords do not match.";
+  if (confirmInput && passwordInput && confirmInput.value) {
+    const match=confirmInput.value===passwordInput.value;
+    confirmInput.classList.toggle("input-invalid",!match);
+    const error=$("#confirm-error"); if(error) error.textContent=match?"":"Passwords do not match.";
   }
 }
 function clearErrors() {
-  ["name-error", "email-error", "password-error", "confirm-error"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = "";
+  ["name-error","email-error","password-error","confirm-error"].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.textContent="";
   });
-  [nameInput, emailInput, passwordInput, confirmInput].filter(Boolean)
-    .forEach(el => el.classList.remove("input-invalid"));
+  [nameInput,emailInput,passwordInput,confirmInput].filter(Boolean)
+    .forEach(el=>el.classList.remove("input-invalid"));
 }
 function validateSignup() {
   clearErrors();
-  let valid = true;
-  const name = nameInput?.value.trim() || "";
-  const email = emailInput?.value.trim().toLowerCase() || "";
-  const password = passwordInput?.value || "";
-  const confirmation = confirmInput?.value || "";
-  const fail = (id, input, text) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = text;
-    if (input) input.classList.add("input-invalid");
-    valid = false;
+  const values={
+    name:nameInput?.value.trim()||"",
+    email:emailInput?.value.trim().toLowerCase()||"",
+    password:passwordInput?.value||"",
+    confirm:confirmInput?.value||""
   };
-  if (name.length < 2) fail("name-error", nameInput, "Enter your full name (at least 2 characters).");
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) fail("email-error", emailInput, "Enter a valid email address.");
-  if (Object.values(passwordRules(password)).some(ok => !ok)) fail("password-error", passwordInput, "Your password must meet all five requirements.");
-  if (!confirmation || confirmation !== password) fail("confirm-error", confirmInput, "Your passwords do not match.");
-  return valid ? { name, email, password } : null;
+  let valid=true;
+  const fail=(id,input,text)=>{
+    const el=document.getElementById(id); if(el) el.textContent=text;
+    input?.classList.add("input-invalid"); valid=false;
+  };
+  if(values.name.length<2) fail("name-error",nameInput,"Enter your full name.");
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) fail("email-error",emailInput,"Enter a valid email address.");
+  if(Object.values(rules(values.password)).some(v=>!v)) fail("password-error",passwordInput,"Your password must meet all five requirements.");
+  if(!values.confirm||values.confirm!==values.password) fail("confirm-error",confirmInput,"Your passwords do not match.");
+  return valid?values:null;
 }
-function firebaseMessage(error) {
-  const messages = {
-    "auth/email-already-in-use": "An account already exists with this email. Please log in.",
-    "auth/invalid-email": "That email address is not valid.",
-    "auth/weak-password": "Choose a stronger password.",
-    "auth/operation-not-allowed": "Email/password sign-up is disabled in Firebase Authentication.",
-    "auth/network-request-failed": "Network connection failed. Check your internet connection and try again.",
-    "auth/too-many-requests": "Too many attempts. Please wait a little and try again.",
-    "auth/invalid-credential": "Email or password is incorrect.",
-    "auth/user-disabled": "This account has been disabled. Contact support.",
-    "auth/user-not-found": "No account was found with that email. Create an account first.",
-    "auth/wrong-password": "Email or password is incorrect."
+function explain(error) {
+  const messages={
+    "auth/email-already-in-use":"An account already exists with this email. Please sign in.",
+    "auth/invalid-email":"That email address is not valid.",
+    "auth/weak-password":"Choose a stronger password.",
+    "auth/operation-not-allowed":"Email/password sign-up is disabled. Please contact DEVPAGES support.",
+    "auth/network-request-failed":"Network connection failed. Check your internet and try again.",
+    "auth/too-many-requests":"Too many attempts. Please wait and try again.",
+    "auth/invalid-credential":"Email or password is incorrect.",
+    "auth/user-disabled":"This account has been disabled. Contact support.",
+    "auth/user-not-found":"No account was found with that email."
   };
   return messages[error?.code] || error?.message || "Something went wrong. Please try again.";
 }
-async function createAccount() {
-  const details = validateSignup();
-  if (!details) {
-    showMessage("Please correct the highlighted fields.", "error");
-    return;
-  }
-  setBusy(true, "Creating account…");
-  showMessage("Connecting securely to DEVPAGES…");
+async function signup() {
+  const data=validateSignup();
+  if(!data){messageText("Please correct the highlighted fields.","error");return;}
+  setBusy(true,"Creating account…");
+  messageText("Creating your secure account…");
   try {
-    const credential = await createUserWithEmailAndPassword(auth, details.email, details.password);
-    await updateProfile(credential.user, { displayName: details.name });
+    const credential=await createUserWithEmailAndPassword(auth,data.email,data.password);
+    await updateProfile(credential.user,{displayName:data.name});
     await sendEmailVerification(credential.user);
-    await signOut(auth);
-    form.reset();
-    renderPasswordRules();
-    showMessage("Your account has been created. Check your email inbox (and spam folder) and verify your email before logging in.", "success");
-  } catch (error) {
-    console.error("DEVPAGES sign-up error", error);
-    showMessage(firebaseMessage(error), "error");
-  } finally {
-    setBusy(false);
-  }
+    form.reset(); renderRules();
+    messageText("Account created. Check your inbox or spam folder and verify your email before signing in.","success");
+  } catch(error) {
+    console.error("DEVPAGES signup:",error); messageText(explain(error),"error");
+  } finally { setBusy(false); }
 }
-async function establishSession(user) {
-  const idToken = await user.getIdToken(true);
-  const response = await fetch("/api/auth/firebase-session", {
-    method: "POST",
-    credentials: "same-origin",
-    cache: "no-store",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ idToken })
+async function createServerSession(user) {
+  const token=await user.getIdToken(true);
+  const response=await fetch("/api/auth/firebase-session",{
+    method:"POST",credentials:"same-origin",cache:"no-store",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({idToken:token})
   });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok || !data.ok) throw new Error(data.message || "Your DEVPAGES session could not be created. Please try again.");
-  location.replace("/account.html");
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok||!data.ok) throw new Error(data.message||"DEVPAGES could not create your secure session.");
 }
 async function login() {
-  const email = emailInput?.value.trim().toLowerCase() || "";
-  const password = passwordInput?.value || "";
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    showMessage("Enter a valid email address.", "error"); emailInput?.focus(); return;
-  }
-  if (!password) { showMessage("Enter your password.", "error"); passwordInput?.focus(); return; }
-  setBusy(true, "Signing in…");
-  showMessage("Checking your account…");
+  const email=emailInput?.value.trim().toLowerCase()||"";
+  const password=passwordInput?.value||"";
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){messageText("Enter a valid email address.","error");emailInput?.focus();return;}
+  if(!password){messageText("Enter your password.","error");passwordInput?.focus();return;}
+  setBusy(true,"Signing in…"); messageText("Verifying your account…");
   try {
-    const credential = await signInWithEmailAndPassword(auth, email, password);
-    if (!credential.user.emailVerified) {
-      await sendEmailVerification(credential.user);
-      await signOut(auth);
-      throw new Error("Please verify your email first. A fresh verification email has been sent.");
+    const credential=await signInWithEmailAndPassword(auth,email,password);
+    if(!credential.user.emailVerified){
+      try { await sendEmailVerification(credential.user); } catch(_) {}
+      throw new Error("Please verify your email first. We have requested a new verification email.");
     }
-    await establishSession(credential.user);
-  } catch (error) {
-    console.error("DEVPAGES login error", error);
-    showMessage(firebaseMessage(error), "error");
-  } finally {
+    await createServerSession(credential.user);
+    location.assign("/account.html");
+  } catch(error) {
+    console.error("DEVPAGES login:",error); messageText(explain(error),"error");
     setBusy(false);
   }
 }
 async function resetPassword() {
-  const email = emailInput?.value.trim().toLowerCase() || "";
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    showMessage("Enter your email address above first.", "error"); emailInput?.focus(); return;
-  }
-  const button = $("#reset-password");
-  if (busy) return;
-  busy = true; if (button) button.disabled = true;
-  try {
-    await sendPasswordResetEmail(auth, email);
-    showMessage("If an account exists for that email, a password reset message has been sent.", "success");
-  } catch (error) {
-    showMessage(firebaseMessage(error), "error");
-  } finally {
-    busy = false; if (button) button.disabled = false;
-  }
-}
-async function checkDashboardSession() {
-  try {
-    const response = await fetch("/api/auth/me", { credentials: "same-origin", cache: "no-store" });
-    const data = await response.json();
-    if (!data.authenticated || !data.user) { location.replace("/login.html"); return; }
-    const panel = $("#signed-in-panel");
-    if (panel) {
-      panel.hidden = false;
-      const email = panel.querySelector("[data-user-email]");
-      const role = panel.querySelector("[data-user-role]");
-      if (email) email.textContent = data.user.email;
-      if (role) role.textContent = data.user.role === "admin" ? "Administrator account" : "Customer account";
-    }
-    const alert = $(".workspace-alert"); if (alert) alert.hidden = true;
-    const heading = $(".workspace-heading .preview-pill");
-    if (heading) { heading.textContent = "ACCOUNT ACTIVE"; heading.classList.add("active-pill"); }
-    await loadDashboard();
-  } catch (error) {
-    console.error("DEVPAGES dashboard session error", error);
-    showMessage("We couldn't check your account session. Refresh the page or sign in again.", "error");
-  }
+  const email=emailInput?.value.trim().toLowerCase()||"";
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){messageText("Enter your email address first.","error");emailInput?.focus();return;}
+  const reset=$("#reset-password"); if(busy)return;
+  busy=true;if(reset)reset.disabled=true;
+  try { await sendPasswordResetEmail(auth,email);messageText("If an account exists for that email, a password reset email has been sent.","success"); }
+  catch(error){messageText(explain(error),"error");}
+  finally{busy=false;if(reset)reset.disabled=false;}
 }
 async function loadDashboard() {
-  const response = await fetch("/api/dashboard", { credentials: "same-origin", cache: "no-store" });
-  if (!response.ok) return;
-  const data = await response.json();
-  const cards = document.querySelectorAll(".metric-card strong");
-  if (cards[0]) cards[0].textContent = (data.sites || []).length;
-  if (cards[1]) cards[1].textContent = (data.domains || []).filter(x => ["paid", "registered"].includes(x.status)).length;
-  if (cards[2]) cards[2].textContent = (data.domains || []).length + (data.payments || []).length;
-  const render = (id, items, format) => {
-    const box = document.getElementById(id);
-    if (!box || !items?.length) return;
-    box.replaceChildren();
-    items.forEach(item => {
-      const info = format(item);
-      const row = document.createElement("div"); row.className = "account-data-row";
-      const left = document.createElement("div");
-      const title = document.createElement("strong"); title.textContent = info.title;
-      const detail = document.createElement("small"); detail.textContent = info.detail;
-      const status = document.createElement("span"); status.textContent = info.status;
-      left.append(title, detail); row.append(left, status); box.append(row);
-    });
-  };
-  render("websites-list", data.sites, x => ({ title:x.project_name, detail:x.public_url || "Website address pending", status:x.status }));
-  render("domains-list", data.domains, x => ({ title:x.domain_name, detail:x.currency + " · " + (x.registration_price_minor == null ? "Price pending" : ((x.registration_price_minor + x.markup_minor) / 100).toFixed(2)), status:x.status }));
-  render("payments-list", data.payments, x => ({ title:x.provider + " payment", detail:x.currency + " " + (x.amount_minor / 100).toFixed(2), status:x.status }));
-  render("activity-list", data.activity, x => ({ title:x.event_type.replaceAll("_", " "), detail:new Date(x.created_at + "Z").toLocaleString(), status:"Activity" }));
-  const hosting = $("#hosting-connections-list");
-  if (hosting) {
-    hosting.replaceChildren();
-    if (data.hostingConnections?.length) {
-      data.hostingConnections.forEach(item => {
-        const row = document.createElement("div"); row.className = "account-data-row";
-        const left = document.createElement("div");
-        const title = document.createElement("strong"); title.textContent = "Cloudflare account";
-        const detail = document.createElement("small"); detail.textContent = "Account ID: " + item.provider_account_id;
-        left.append(title, detail);
-        const disconnect = document.createElement("button"); disconnect.type = "button"; disconnect.className = "text-link"; disconnect.textContent = "Disconnect";
-        disconnect.addEventListener("click", async () => {
-          if (!confirm("Disconnect this Cloudflare account? Also revoke its API token in Cloudflare.")) return;
-          disconnect.disabled = true;
-          try {
-            const r = await fetch("/api/hosting/disconnect", { method:"POST", credentials:"same-origin", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ accountId:item.provider_account_id }) });
-            const result = await r.json();
-            if (!r.ok || !result.ok) throw new Error(result.message || "Disconnect failed.");
-            await loadDashboard();
-          } catch (error) { alert(error.message); disconnect.disabled = false; }
-        });
-        row.append(left, disconnect); hosting.append(row);
-      });
-    } else {
-      const empty = document.createElement("div"); empty.className = "empty-state";
-      empty.innerHTML = "<span>◎</span><strong>No hosting account connected</strong><small>Connect your own Cloudflare account to prepare for Pages hosting.</small><a class='text-link' href='/connect-hosting.html'>Connect hosting →</a>";
-      hosting.append(empty);
+  const alertBox=$(".workspace-alert");
+  try {
+    const response=await fetch("/api/auth/me",{credentials:"same-origin",cache:"no-store"});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok) throw new Error(data.message||"Account session check failed.");
+    if(!data.authenticated||!data.user) {
+      if(alertBox){alertBox.hidden=false;alertBox.innerHTML='<strong>You are not signed in yet.</strong><p>Sign in to view your private workspace. <a class="text-link" href="/login.html">Go to login →</a></p>';}
+      return;
     }
+    const panel=$("#signed-in-panel");
+    if(panel){
+      panel.hidden=false;
+      const email=$("[data-user-email]",panel),role=$("[data-user-role]",panel);
+      if(email)email.textContent=data.user.email||"";
+      if(role)role.textContent=data.user.role==="admin"?"Administrator account":"Customer account";
+    }
+    if(alertBox)alertBox.hidden=true;
+    const heading=$(".workspace-heading .preview-pill");
+    if(heading){heading.textContent="ACCOUNT ACTIVE";heading.classList.add("active-pill");}
+    const dashboard=await fetch("/api/dashboard",{credentials:"same-origin",cache:"no-store"});
+    if(!dashboard.ok) throw new Error("Your account is signed in, but dashboard information could not be loaded.");
+    const result=await dashboard.json();
+    const cards=document.querySelectorAll(".metric-card strong");
+    if(cards[0])cards[0].textContent=(result.sites||[]).length;
+    if(cards[1])cards[1].textContent=(result.domains||[]).filter(x=>["paid","registered"].includes(x.status)).length;
+    if(cards[2])cards[2].textContent=(result.domains||[]).length+(result.payments||[]).length;
+  } catch(error) {
+    console.error("DEVPAGES dashboard:",error);
+    if(alertBox){alertBox.hidden=false;alertBox.textContent=error.message+" Please refresh or sign in again.";}
   }
 }
-function bindControls() {
-  passwordInput?.addEventListener("input", renderPasswordRules);
-  confirmInput?.addEventListener("input", renderPasswordRules);
-  document.querySelectorAll("[data-toggle-password]").forEach(button => {
-    button.addEventListener("click", () => {
-      const input = document.getElementById(button.dataset.togglePassword);
-      if (!input) return;
-      const visible = input.type === "password";
-      input.type = visible ? "text" : "password";
-      button.setAttribute("aria-pressed", String(visible));
-      button.setAttribute("aria-label", visible ? "Hide password" : "Show password");
-    });
-  });
-  form?.addEventListener("submit", event => {
-    event.preventDefault();
-    if (busy) return;
-    if (page === "signup") createAccount();
-    else if (page === "login") login();
-  });
-  $("#sign-in")?.addEventListener("click", () => { if (!busy && page === "login") login(); });
-  $("#reset-password")?.addEventListener("click", resetPassword);
-  $("#sign-out")?.addEventListener("click", async () => {
-    const button = $("#sign-out"); if (button) button.disabled = true;
-    try {
-      await fetch("/api/auth/logout", { method:"POST", credentials:"same-origin" });
-      if (auth) await signOut(auth);
-    } finally { location.replace("/login.html"); }
-  });
+function bindPasswordButtons() {
+  document.querySelectorAll("[data-toggle-password]").forEach(btn=>btn.addEventListener("click",()=>{
+    const input=document.getElementById(btn.dataset.togglePassword);if(!input)return;
+    const show=input.type==="password";input.type=show?"text":"password";
+    btn.setAttribute("aria-pressed",String(show));btn.setAttribute("aria-label",show?"Hide password":"Show password");
+  }));
 }
-
-try {
-  const app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  bindControls();
-  if (page === "signup") renderPasswordRules();
-  if (page === "dashboard") await checkDashboardSession();
-  // Keep login and signup pages stable. Only the dashboard performs an auth redirect.
-
-} catch (error) {
-  console.error("DEVPAGES authentication startup failed", error);
-  showMessage("The secure sign-in service could not start. Check your connection, refresh the page, and try again.", "error");
-  if (submitButton) submitButton.disabled = true;
+function start() {
+  bindPasswordButtons();
+  passwordInput?.addEventListener("input",renderRules);
+  confirmInput?.addEventListener("input",renderRules);
+  // One and only one authentication action: the form submit event.
+  form?.addEventListener("submit",event=>{
+    event.preventDefault();if(busy)return;
+    if(page==="signup")void signup();
+    if(page==="login")void login();
+  });
+  $("#reset-password")?.addEventListener("click",()=>void resetPassword());
+  $("#sign-out")?.addEventListener("click",async()=>{
+    const out=$("#sign-out");if(out)out.disabled=true;
+    try { await fetch("/api/auth/logout",{method:"POST",credentials:"same-origin",cache:"no-store"}); }
+    catch(error){console.warn("Sign-out request:",error);}
+    location.assign("/login.html");
+  });
+  if(page==="signup")renderRules();
+  if(page==="dashboard")void loadDashboard();
+}
+if(page==="dashboard") {
+  start();
+} else {
+  try { auth=getAuth(initializeApp(firebaseConfig)); start(); }
+  catch(error) {
+    console.error("DEVPAGES authentication startup:",error);
+    messageText("Secure sign-in could not start. Refresh the page and check your internet connection.","error");
+    if(button)button.disabled=true;
+  }
 }
