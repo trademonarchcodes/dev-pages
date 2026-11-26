@@ -29,6 +29,10 @@
  let authenticated=false;
  try{const r=await fetch('/api/auth/me',{credentials:'same-origin',cache:'no-store'});const d=await r.json();authenticated=!!d.authenticated;}catch(e){}
  if(!authenticated){gate.hidden=false;content.innerHTML='<div class="step-count">SIGN-IN REQUIRED</div><h2>Sign in to DEVPAGES first.</h2><p>Your hosting connection must belong to your verified DEVPAGES customer account. After signing in, reopen this setup; your current stage will be retained.</p>';return;}
+ let hasConnection=false;
+ try{const r=await fetch('/api/hosting/status',{credentials:'same-origin',cache:'no-store'});const d=await r.json();hasConnection=!!(d.ok&&d.connections&&d.connections.length);}catch(e){}
+ if(hasConnection){stage=6;localStorage.setItem(KEY,'6');}
+ else if(stage>5){stage=1;localStorage.setItem(KEY,'1');}
  function setMessage(text,type){message.textContent=text;message.className='setup-message '+type;}
  function drawProgress(){track.forEach((el,i)=>{el.classList.toggle('active',i===stage-1);el.classList.toggle('done',i<stage-1);el.querySelector('.progress-dot').textContent=i<stage-1?'✓':String(i+1)});}
  function render(){
