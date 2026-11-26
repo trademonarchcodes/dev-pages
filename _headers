@@ -11,3 +11,6 @@
 
 /admin.html
   X-Robots-Tag: noindex, nofollow
+
+/account.html
+  X-Robots-Tag: noindex, nofollow
