@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#070b14"><meta name="robots" content="noindex,nofollow">
+<title>Connect DEVPAGES Hosting | DEVPAGES</title>
+<link rel="icon" type="image/png" href="/assets/devpages-logo.png">
+<link rel="stylesheet" href="/styles.css">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+.setup-page{max-width:850px;margin:0 auto;padding:52px 20px 90px;min-height:70vh}.setup-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:30px}.setup-top a{color:#9fc9ef;text-decoration:none;font-size:12px}.setup-label{font:10px 'DM Mono',monospace;letter-spacing:.14em;color:#73cfff}.setup-page h1{font-size:clamp(30px,6vw,48px);letter-spacing:-.055em;margin:10px 0}.setup-intro{max-width:620px;color:#bac9dc;line-height:1.8;font-size:14px}.preview-warning{margin:24px 0;padding:15px 17px;border:1px solid #755d2e;background:#241e12;border-radius:8px;color:#f4d99c;font-size:12px;line-height:1.7}.progress-shell{margin:30px 0 22px;padding:20px 16px;background:#0c1422;border:1px solid #22344b;border-radius:10px}.progress-track{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));position:relative;gap:0}.progress-track:before{content:"";position:absolute;left:10%;right:10%;top:17px;height:2px;background:#26384e}.progress-step{position:relative;z-index:1;display:flex;align-items:center;flex-direction:column;gap:9px;text-align:center;color:#8192a8;font:9px 'DM Mono',monospace}.progress-dot{width:35px;height:35px;border-radius:50%;display:grid;place-items:center;background:#101d30;border:1px solid #40516a;color:#9aabc0;font-size:12px;transition:.25s}.progress-step.active{color:#8cddff}.progress-step.active .progress-dot{background:#65cfff;color:#06111f;border-color:#65cfff;box-shadow:0 0 0 5px #65cfff20,0 0 22px #65cfff66}.progress-step.done .progress-dot{background:#173d35;border-color:#3bc99a;color:#8df0c9}.setup-card{background:linear-gradient(145deg,#101d30,#0a1320);border:1px solid #2b405a;border-radius:10px;padding:clamp(20px,4vw,34px);min-height:300px}.step-count{font:10px 'DM Mono',monospace;color:#72cfff;letter-spacing:.12em}.setup-card h2{font-size:clamp(23px,4vw,32px);margin:12px 0}.setup-card p,.setup-card li{color:#bdcadd;line-height:1.8;font-size:13px}.setup-card ul{padding-left:20px}.setup-card a{color:#83d6ff}.confirm-row{display:flex;align-items:flex-start;gap:11px;padding:15px 0;margin-top:20px;border-top:1px solid #26384e;color:#d8e6f7;font-size:12px;line-height:1.6}.confirm-row input{accent-color:#65cfff;width:17px;height:17px;flex:none;margin-top:1px}.setup-actions{display:flex;justify-content:flex-end;margin-top:20px}.setup-next{border:0;border-radius:5px;background:#65cfff;color:#06111f;font-weight:700;padding:13px 20px;font-size:12px;cursor:pointer}.setup-next:disabled{opacity:.35;cursor:not-allowed}.setup-note{font-size:11px!important;color:#91a8c4!important;margin-top:16px}.finish-panel{display:none;text-align:center;padding:24px 0}.finish-panel h2{color:#8de9c5}.finish-panel a{display:inline-block;margin-top:16px;padding:12px 18px;border-radius:5px;background:#65cfff;color:#06111f;text-decoration:none;font-weight:700;font-size:12px}
+@media(max-width:520px){.setup-page{padding:30px 15px 60px}.progress-shell{padding:16px 7px}.progress-step{font-size:7px}.progress-dot{width:30px;height:30px;font-size:11px}.progress-track:before{top:15px;left:9%;right:9%}.setup-top{margin-bottom:22px}}
+</style>
+</head>
+<body><div class="noise"></div>
+<main class="setup-page">
+ <div class="setup-top"><a href="#" aria-label="DEVPAGES">DEVPAGES / HOSTING SETUP</a><span class="setup-label">GUIDED PREVIEW</span></div>
+ <div class="setup-label">SECURE HOSTING CONNECTION</div>
+ <h1>Connect your <span style="color:#65cfff">hosting.</span></h1>
+ <p class="setup-intro">A simple guided process designed to connect your own Cloudflare account to DEVPAGES. Complete each step in order; your progress is saved on this device.</p>
+ <div class="preview-warning"><strong>Preview only — connection is not live yet.</strong><br>We are preparing the secure connection system. Please do not create or copy an API token for DEVPAGES yet. This walkthrough demonstrates how the finished setup will work.</div>
+ <section class="progress-shell" aria-label="Setup progress">
+  <div class="progress-track" id="progress-track">
+   <div class="progress-step active"><span class="progress-dot">1</span><span>PREPARE</span></div>
+   <div class="progress-step"><span class="progress-dot">2</span><span>SIGN IN</span></div>
+   <div class="progress-step"><span class="progress-dot">3</span><span>PERMISSIONS</span></div>
+   <div class="progress-step"><span class="progress-dot">4</span><span>SECURE TOKEN</span></div>
+   <div class="progress-step"><span class="progress-dot">5</span><span>CONNECT</span></div>
+  </div>
+ </section>
+ <section class="setup-card" aria-live="polite">
+  <div id="step-content">
+   <div class="step-count">STAGE 01 / 05</div>
+   <h2>Before you begin.</h2>
+   <p>You will need a Cloudflare account that you own. DEVPAGES will only request the access needed to manage Pages hosting after you approve it.</p>
+   <ul><li>Use an account you control.</li><li>Never share your Cloudflare password with anyone.</li><li>You will review and approve access yourself.</li></ul>
+   <label class="confirm-row"><input type="checkbox" id="stage-confirm"><span>I understand what is needed and want to continue to the next stage.</span></label>
+   <div class="setup-actions"><button class="setup-next" id="next-stage" disabled>Confirm & continue →</button></div>
+  </div>
+  <div class="finish-panel" id="finish-panel"><div class="step-count">PREVIEW COMPLETED</div><h2>You're all set for now.</h2><p>The guided layout is ready for the secure hosting integration. Actual account connection will be enabled once the backend is implemented and tested.</p><a href="/account.html">Return to My Space →</a></div>
+ </section>
+ <p class="setup-note">Your progress is saved in this browser. Previous stages are locked after confirmation to keep the process clear and consistent.</p>
+</main>
+<script>
+(function(){
+ const key='devpages-hosting-wizard-preview-v1';
+ const stages=[
+  {title:'Before you begin.',body:'You will need a Cloudflare account that you own. DEVPAGES will only request the access needed to manage Pages hosting after you approve it.',items:['Use an account you control.','Never share your Cloudflare password with anyone.','You will review and approve access yourself.'],confirm:'I understand what is needed and want to continue to the next stage.'},
+  {title:'Sign in to your account.',body:'In the live setup, you will securely sign in to your Cloudflare account in a separate official Cloudflare page, then return to DEVPAGES.',items:['Use the Cloudflare account where your Pages projects should belong.','If you do not have an account, create one directly with Cloudflare.','DEVPAGES will never ask for your Cloudflare password.'],confirm:'I understand that I must sign in directly with Cloudflare.'},
+  {title:'Review the requested access.',body:'DEVPAGES will ask for a restricted API token with only the account-level Pages permissions needed for the hosting features you approve.',items:['Choose the minimum Pages permission requested by the official DEVPAGES guide.','Do not grant unrelated account, billing, DNS or zone permissions.','Review the permission summary before creating anything.'],confirm:'I will review the permissions and grant only the access DEVPAGES needs.'},
+  {title:'Keep your token private.',body:'The live setup will explain how to create and securely transfer your token. Tokens are sensitive credentials and must be handled carefully.',items:['Never send a token through chat, email or social media.','Do not paste a token into an unverified page.','DEVPAGES will provide a secure connection form before asking for any token.'],confirm:'I understand that an API token is private and must only be entered into the verified DEVPAGES connection form.'},
+  {title:'Connect to DEVPAGES.',body:'This final screen will become the secure connection form. You will be able to submit your token, verify the account and confirm the connection from your DEVPAGES workspace.',items:['The connection feature is not active yet.','Do not create or submit an API token during this preview.','When launched, DEVPAGES will show the connected account and a disconnect option.'],confirm:'I understand that this is a preview and the actual connection is not available yet.'}
+ ];
+ const content=document.getElementById('step-content'), confirm=document.getElementById('stage-confirm'), next=document.getElementById('next-stage'), track=[...document.querySelectorAll('.progress-step')], finish=document.getElementById('finish-panel');
+ let stage=Math.min(5,Math.max(1,Number(localStorage.getItem(key)||1)));
+ let completed=stage===5?4:stage-1;
+ function render(){
+  track.forEach((el,i)=>{el.classList.toggle('active',i===stage-1);el.classList.toggle('done',i<completed);el.querySelector('.progress-dot').textContent=i<completed?'✓':String(i+1)});
+  if(stage>5){content.style.display='none';finish.style.display='block';return}
+  const s=stages[stage-1];
+  content.innerHTML='<div class="step-count">STAGE '+String(stage).padStart(2,'0')+' / 05</div><h2>'+s.title+'</h2><p>'+s.body+'</p><ul>'+s.items.map(v=>'<li>'+v+'</li>').join('')+'</ul><label class="confirm-row"><input type="checkbox" id="stage-confirm"><span>'+s.confirm+'</span></label><div class="setup-actions"><button class="setup-next" id="next-stage" disabled>'+(stage===5?'Complete preview ✓':'Confirm & continue →')+'</button></div>';
+  const c=document.getElementById('stage-confirm'), b=document.getElementById('next-stage');
+  c.addEventListener('change',()=>b.disabled=!c.checked);
+  b.addEventListener('click',()=>{if(!c.checked)return;stage++;completed=stage-1;localStorage.setItem(key,String(stage));if(stage>5){localStorage.setItem(key,'6');render();return}render()});
+ }
+ if(stage>5){content.style.display='none';finish.style.display='block';track.forEach(el=>el.classList.add('done'))}
+ else render();
+ // Keep the flow forward-only until the preview is completed.
+ history.pushState({wizard:true},'',location.href);
+ window.addEventListener('popstate',()=>{if(Number(localStorage.getItem(key)||1)<=5)history.pushState({wizard:true},'',location.href)});
+})();
+</script>
+</body></html>
