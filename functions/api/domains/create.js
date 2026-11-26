@@ -10,7 +10,7 @@ export async function onRequestPost({ request, env }) {
 
     const body = await request.json();
     let name = String(body.name || "").trim().toLowerCase();
-    name = name.replace(/^https?:\\/\\//, "").replace(/\\/+$/, "");
+    name = name.replace(/^https?:\/\//, "").replace(/\/+$/, "");
     if (name.endsWith(".pages.dev")) name = name.slice(0, -".pages.dev".length);
     if (!/^[a-z0-9](?:[a-z0-9-]{0,48}[a-z0-9])?$/.test(name)) {
       return json({ error: "Enter a valid name using 1–50 lowercase letters, numbers or hyphens. You can enter the name alone or include .pages.dev." }, 400);
