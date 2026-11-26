@@ -19,6 +19,7 @@ export async function onRequestPost({request,env}) {
     const domain=await env.DB.prepare("SELECT id,user_id,project_name,hostname,status,cloudflare_account_id FROM managed_domains WHERE id=? AND user_id=?").bind(domainId,user.id).first();
     if(!domain)return json({error:"Domain not found."},404);
     if(!["active","provisioning"].includes(domain.status))return json({error:"Your domain must be active before publishing. Complete setup payment first."},409);
+    if(domain.expires_at && Date.parse(domain.expires_at)<=Date.now())return json({error:"This hosting period has expired. Renew the domain before publishing."},409);
     const result=await deployPagesFiles(env,domain,files);
     return json({success:true,hostname:domain.hostname,deployment_url:result.url||"https://"+domain.hostname,files:files.length});
   } catch(error) { return json({error:error.message||"Website deployment failed."},400); }
