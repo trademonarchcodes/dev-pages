@@ -133,9 +133,12 @@ export async function deployPagesFiles(env,domain,files,options={}) {
   const uploadTokenData=await uploadTokenResponse.json();
   const uploadToken=uploadTokenData.result?.jwt;
   if(!uploadTokenResponse.ok||!uploadToken)throw new Error("Could not authorize website upload: "+(uploadTokenData.errors?.[0]?.message||"Cloudflare upload token unavailable."));
+  const specialNames=new Set(["_headers","_redirects","_routes.json"]);
+  const assetFiles=files.filter(file=>!specialNames.has(file.path));
+  const specialFiles=files.filter(file=>specialNames.has(file.path));
   const manifest={};
   const uploadItems=[];
-  for(const file of files) {
+  for(const file of assetFiles) {
     const path="/"+file.path.replace(/^\/+/, "");
     const dot=path.lastIndexOf("."),slash=path.lastIndexOf("/");
     const extension=dot>slash?path.slice(dot+1):"";
@@ -154,6 +157,10 @@ export async function deployPagesFiles(env,domain,files,options={}) {
   if(!registered.ok||!registeredData.success)throw new Error(registeredData.errors?.[0]?.message||"Cloudflare could not register uploaded website assets.");
   const form=new FormData();
   form.set("manifest",JSON.stringify(manifest));
+  for(const file of specialFiles) {
+    const bytes=Uint8Array.from(atob(file.content),ch=>ch.charCodeAt(0));
+    form.set(file.path,new Blob([bytes],{type:file.content_type||"text/plain"}),file.path);
+  }
   form.set("branch","main");
   form.set("commit_message","Published through DEVPAGES");
   const deployment=await fetch(base+projectPath+"/deployments",{method:"POST",headers:auth,body:form});
