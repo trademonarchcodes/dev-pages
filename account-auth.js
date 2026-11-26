@@ -167,18 +167,16 @@
     setBusy(true, "Creating...");
     messageText("Creating your DEVPAGES account…");
     try {
-      const result = await supabaseRequest("/auth/v1/signup", "POST", {
+      const redirect = encodeURIComponent(PRODUCTION_URL + "/login.html");
+      await supabaseRequest("/auth/v1/signup?redirect_to=" + redirect, "POST", {
         email: values.email,
         password: values.password,
         data: { full_name: values.name }
       });
-      if (!result.access_token || !result.user) {
-        throw new Error("Your account was created, but email confirmation is still enabled in the authentication settings. Turn off Confirm email in Supabase, then try again.");
-      }
-      messageText("Account created. Taking you to login…", "success");
       form.reset();
       renderRules();
-      location.assign("/login.html?created=1");
+      messageText("Account created. Check your email and click the verification link before signing in.", "success");
+      setTimeout(function () { location.assign("/login.html?verify=1"); }, 1800);
     } catch (error) {
       console.error("DEVPAGES sign-up:", error);
       messageText(authErrorMessage(error), "error");
@@ -297,19 +295,22 @@
     }
     if (token && (type === "signup" || type === "magiclink" || type === "")) {
       try {
-        messageText("Email verified. Preparing your DEVPAGES workspace…", "success");
-        await createServerSession(token);
+        await supabaseRequest("/auth/v1/user", "GET", undefined, token);
         history.replaceState(null, "", location.pathname);
-        location.replace("/account.html");
+        location.replace("/login.html?verified=1");
         return;
-      } catch (sessionError) {
-        console.error("DEVPAGES email verification:", sessionError);
-        messageText(sessionError.message || "Email verified, but your DEVPAGES session could not be created. Please sign in.", "error");
+      } catch (verificationError) {
+        console.error("DEVPAGES email verification:", verificationError);
+        messageText("This verification link is invalid or has expired. Request a new verification email or contact support.", "error");
         return;
       }
     }
     const params = new URLSearchParams(location.search);
-    if (params.get("created") === "1") {
+    if (params.get("verified") === "1") {
+      messageText("Email verified successfully. Sign in with your email and password to continue.", "success");
+    } else if (params.get("verify") === "1") {
+      messageText("Check your inbox and verify your email before signing in. Also check your spam folder.", "success");
+    } else if (params.get("created") === "1") {
       messageText("Your account has been created. Log in with your email and password to continue.", "success");
     } else if (params.get("password") === "updated") {
       messageText("Your password has been updated. Sign in with your new password.", "success");
