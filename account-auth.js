@@ -1,29 +1,21 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
-import {
-  initializeAuth, browserLocalPersistence, createUserWithEmailAndPassword,
-  signInWithEmailAndPassword, sendEmailVerification, sendPasswordResetEmail,
-  updateProfile
-} from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.119.2";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyBo8SJxL8XgLdXe3hzBaa3q3I_2pAC9IKLo",
-  authDomain: "devpagesdomain.firebaseapp.com",
-  projectId: "devpagesdomain",
-  storageBucket: "devpagesdomain.firebasestorage.app",
-  messagingSenderId: "972778411264",
-  appId: "1:972778411264:web:f14661c077767046da0fe5"
-};
+const supabase = createClient("https://xkkczzhjffocfywjlukr.supabase.co", "sb_publishable_rOIFM2e5DRVSIN-dhFfqkQ_YOIqlGZN", {
+  auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: true }
+});
+
 const $ = (s, root=document) => root.querySelector(s);
-const page = location.pathname.endsWith("/signup.html") ? "signup" :
-             location.pathname.endsWith("/login.html") ? "login" : "dashboard";
+const path = location.pathname;
+const page = path.endsWith("/signup.html") ? "signup" :
+             path.endsWith("/login.html") ? "login" :
+             path.endsWith("/reset-password.html") ? "reset" : "dashboard";
 const form = $("#account-auth-form");
 const message = $("#auth-message");
-const button = $("#create-account") || $("#sign-in");
+const button = $("#create-account") || $("#sign-in") || $("#save-password");
 const emailInput = $("#account-email");
 const passwordInput = $("#account-password");
 const nameInput = $("#account-name");
 const confirmInput = $("#confirm-password");
-let auth = null;
 let busy = false;
 
 function messageText(text, kind="info") {
@@ -91,43 +83,51 @@ function validateSignup() {
   return valid?values:null;
 }
 function explain(error) {
-  const messages={
-    "auth/email-already-in-use":"An account already exists with this email. Please sign in.",
-    "auth/invalid-email":"That email address is not valid.",
-    "auth/weak-password":"Choose a stronger password.",
-    "auth/operation-not-allowed":"Email/password sign-up is disabled. Please contact DEVPAGES support.",
-    "auth/network-request-failed":"Network connection failed. Check your internet and try again.",
-    "auth/too-many-requests":"Too many attempts. Please wait and try again.",
-    "auth/invalid-credential":"Email or password is incorrect.",
-    "auth/user-disabled":"This account has been disabled. Contact support.",
-    "auth/user-not-found":"No account was found with that email."
-  };
-  return messages[error?.code] || error?.message || "Something went wrong. Please try again.";
+  const text=String(error?.message||"");
+  if(/already registered|already exists|user already/i.test(text)) return "An account may already exist with this email. Try signing in.";
+  if(/invalid login credentials/i.test(text)) return "Email or password is incorrect.";
+  if(/email not confirmed/i.test(text)) return "Please verify your email address using the link we sent you.";
+  if(/password should be|weak password|at least/i.test(text)) return "Choose a stronger password that meets all five requirements.";
+  if(/rate limit|too many requests/i.test(text)) return "Too many attempts. Please wait a little and try again.";
+  if(/network|fetch/i.test(text)) return "Connection problem. Check your internet and try again.";
+  return text || "Something went wrong. Please try again.";
+}
+async function createServerSession(accessToken) {
+  const response=await fetch("/api/auth/supabase-session",{
+    method:"POST",credentials:"same-origin",cache:"no-store",
+    headers:{"Content-Type":"application/json","Accept":"application/json"},
+    body:JSON.stringify({accessToken})
+  });
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok||!data.ok) throw new Error(data.message||"DEVPAGES could not create your secure session.");
+  return data;
 }
 async function signup() {
   const data=validateSignup();
   if(!data){messageText("Please correct the highlighted fields.","error");return;}
-  setBusy(true,"Creating account…");
-  messageText("Creating your secure account…");
+  setBusy(true,"Creating account…"); messageText("Creating your secure account…");
   try {
-    const credential=await createUserWithEmailAndPassword(auth,data.email,data.password);
-    await updateProfile(credential.user,{displayName:data.name});
-    await sendEmailVerification(credential.user);
+    const {data:result,error}=await supabase.auth.signUp({
+      email:data.email,
+      password:data.password,
+      options:{
+        data:{full_name:data.name},
+        emailRedirectTo:location.origin+"/login.html?verified=1"
+      }
+    });
+    if(error) throw error;
     form.reset(); renderRules();
-    messageText("Account created. Check your inbox or spam folder and verify your email before signing in.","success");
+    if(result.session?.access_token) {
+      await createServerSession(result.session.access_token);
+      messageText("Your account is ready. Opening your workspace…","success");
+      location.assign("/account.html");
+      return;
+    }
+    messageText("Account created. Check your inbox (and spam folder) and tap the Supabase verification link. Then return here to sign in.","success");
   } catch(error) {
-    console.error("DEVPAGES signup:",error); messageText(explain(error),"error");
+    console.error("DEVPAGES Supabase signup:",error);
+    messageText(explain(error),"error");
   } finally { setBusy(false); }
-}
-async function createServerSession(user) {
-  const token=await user.getIdToken(true);
-  const response=await fetch("/api/auth/firebase-session",{
-    method:"POST",credentials:"same-origin",cache:"no-store",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({idToken:token})
-  });
-  const data=await response.json().catch(()=>({}));
-  if(!response.ok||!data.ok) throw new Error(data.message||"DEVPAGES could not create your secure session.");
 }
 async function login() {
   const email=emailInput?.value.trim().toLowerCase()||"";
@@ -136,26 +136,90 @@ async function login() {
   if(!password){messageText("Enter your password.","error");passwordInput?.focus();return;}
   setBusy(true,"Signing in…"); messageText("Verifying your account…");
   try {
-    const credential=await signInWithEmailAndPassword(auth,email,password);
-    if(!credential.user.emailVerified){
-      try { await sendEmailVerification(credential.user); } catch(_) {}
-      throw new Error("Please verify your email first. We have requested a new verification email.");
-    }
-    await createServerSession(credential.user);
+    const {data,error}=await supabase.auth.signInWithPassword({email,password});
+    if(error) throw error;
+    if(!data.session?.access_token) throw new Error("Supabase did not return a secure session. Please try again.");
+    await createServerSession(data.session.access_token);
+    messageText("Signed in. Opening your workspace…","success");
     location.assign("/account.html");
   } catch(error) {
-    console.error("DEVPAGES login:",error); messageText(explain(error),"error");
+    console.error("DEVPAGES Supabase login:",error);
+    messageText(explain(error),"error");
     setBusy(false);
   }
 }
-async function resetPassword() {
+async function sendPasswordReset() {
   const email=emailInput?.value.trim().toLowerCase()||"";
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){messageText("Enter your email address first.","error");emailInput?.focus();return;}
   const reset=$("#reset-password"); if(busy)return;
   busy=true;if(reset)reset.disabled=true;
-  try { await sendPasswordResetEmail(auth,email);messageText("If an account exists for that email, a password reset email has been sent.","success"); }
-  catch(error){messageText(explain(error),"error");}
+  try {
+    const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:location.origin+"/reset-password.html"});
+    if(error) throw error;
+    messageText("If an account exists for that email, a password reset link has been sent. Check your inbox and spam folder.","success");
+  } catch(error){messageText(explain(error),"error");}
   finally{busy=false;if(reset)reset.disabled=false;}
+}
+async function saveNewPassword() {
+  const password=passwordInput?.value||"";
+  const confirm=confirmInput?.value||"";
+  if(Object.values(rules(password)).some(v=>!v)){messageText("Your new password must meet all five requirements.","error");return;}
+  if(password!==confirm){messageText("Your passwords do not match.","error");return;}
+  setBusy(true,"Updating password…");
+  try {
+    const {data,error}=await supabase.auth.updateUser({password});
+    if(error) throw error;
+    if(!data.user) throw new Error("The password was not updated. Please request a new reset link.");
+    await supabase.auth.signOut();
+    messageText("Password updated successfully. You can now sign in with your new password.","success");
+    form.reset();
+    setTimeout(()=>location.assign("/login.html?password=updated"),1800);
+  } catch(error){messageText(explain(error),"error");}
+  finally{setBusy(false);}
+}
+async function syncEmailConfirmation() {
+  const params=new URLSearchParams(location.search);
+  if(params.get("verified")!=="1" && !params.has("code")) return;
+  try {
+    const {data,error}=await supabase.auth.getSession();
+    if(error) throw error;
+    if(data.session?.access_token && data.session.user?.email_confirmed_at) {
+      messageText("Email verified. Preparing your DEVPAGES workspace…","success");
+      await createServerSession(data.session.access_token);
+      location.replace("/account.html");
+    } else {
+      messageText("Email verification complete. Please sign in with your email and password.","success");
+    }
+  } catch(error){messageText(explain(error),"error");}
+}
+function bindPasswordButtons() {
+  document.querySelectorAll("[data-toggle-password]").forEach(btn=>btn.addEventListener("click",()=>{
+    const input=document.getElementById(btn.dataset.togglePassword);if(!input)return;
+    const show=input.type==="password";input.type=show?"text":"password";
+    btn.setAttribute("aria-pressed",String(show));btn.setAttribute("aria-label",show?"Hide password":"Show password");
+  }));
+}
+function start() {
+  bindPasswordButtons();
+  passwordInput?.addEventListener("input",renderRules);
+  confirmInput?.addEventListener("input",renderRules);
+  form?.addEventListener("submit",event=>{
+    event.preventDefault();if(busy)return;
+    if(page==="signup")void signup();
+    else if(page==="login")void login();
+    else if(page==="reset")void saveNewPassword();
+  });
+  $("#reset-password")?.addEventListener("click",()=>void sendPasswordReset());
+  $("#sign-out")?.addEventListener("click",async()=>{
+    const out=$("#sign-out");if(out)out.disabled=true;
+    try { await supabase.auth.signOut(); } catch(error) { console.warn("Supabase sign-out:",error); }
+    try { await fetch("/api/auth/logout",{method:"POST",credentials:"same-origin",cache:"no-store"}); }
+    catch(error){console.warn("DEVPAGES sign-out request:",error);}
+    location.assign("/login.html");
+  });
+  if(page==="signup" || page==="reset")renderRules();
+  if(page==="login")void syncEmailConfirmation();
+  if(page==="dashboard")void loadDashboard();
 }
 async function loadDashboard() {
   const alertBox=$(".workspace-alert");
@@ -184,54 +248,17 @@ async function loadDashboard() {
     if(cards[0])cards[0].textContent=(result.sites||[]).length;
     if(cards[1])cards[1].textContent=(result.domains||[]).filter(x=>["paid","registered"].includes(x.status)).length;
     if(cards[2])cards[2].textContent=(result.domains||[]).length+(result.payments||[]).length;
+    const hosting=$("#hosting-connections-list");
+    if(hosting){
+      const connections=result.hostingConnections||[];
+      if(connections.length){
+        hosting.innerHTML=connections.map(c=>'<div class="connection-row"><strong>Cloudflare account</strong><span>'+String(c.provider_account_id).replace(/[&<>"']/g,'')+'</span></div>').join("");
+      }
+    }
   } catch(error) {
     console.error("DEVPAGES dashboard:",error);
     if(alertBox){alertBox.hidden=false;alertBox.textContent=error.message+" Please refresh or sign in again.";}
   }
 }
-function bindPasswordButtons() {
-  document.querySelectorAll("[data-toggle-password]").forEach(btn=>btn.addEventListener("click",()=>{
-    const input=document.getElementById(btn.dataset.togglePassword);if(!input)return;
-    const show=input.type==="password";input.type=show?"text":"password";
-    btn.setAttribute("aria-pressed",String(show));btn.setAttribute("aria-label",show?"Hide password":"Show password");
-  }));
-}
-function start() {
-  bindPasswordButtons();
-  passwordInput?.addEventListener("input",renderRules);
-  confirmInput?.addEventListener("input",renderRules);
-  // One and only one authentication action: the form submit event.
-  form?.addEventListener("submit",event=>{
-    event.preventDefault();if(busy)return;
-    if(page==="signup")void signup();
-    if(page==="login")void login();
-  });
-  $("#reset-password")?.addEventListener("click",()=>void resetPassword());
-  $("#sign-out")?.addEventListener("click",async()=>{
-    const out=$("#sign-out");if(out)out.disabled=true;
-    try { await fetch("/api/auth/logout",{method:"POST",credentials:"same-origin",cache:"no-store"}); }
-    catch(error){console.warn("Sign-out request:",error);}
-    location.assign("/login.html");
-  });
-  if(page==="signup")renderRules();
-  if(page==="dashboard")void loadDashboard();
-}
-if(page==="dashboard") {
-  start();
-} else {
-  try {
-    const app = initializeApp(firebaseConfig);
-    // Explicitly create the browser Auth instance with local persistence.
-    // This avoids relying on getAuth's implicit component initialization.
-    auth = initializeAuth(app, { persistence: browserLocalPersistence });
-    if (!auth || typeof auth._getRecaptchaConfig !== "function") {
-      throw new Error("Firebase Auth did not initialize correctly. Please refresh and try again.");
-    }
-    start();
-  }
-  catch(error) {
-    console.error("DEVPAGES authentication startup:",error);
-    messageText("Secure sign-in could not start. Refresh the page and check your internet connection.","error");
-    if(button)button.disabled=true;
-  }
-}
+if(page==="dashboard") start();
+else start();
