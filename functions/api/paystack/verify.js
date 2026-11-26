@@ -1,7 +1,7 @@
-import { json, getUser, verifyPaystack, applyPayment } from "../../_lib/billing.js";
+import { json, getUser, verifyPaystack, applyPayment, isPaystackKeyAllowed } from "../../_lib/billing.js";
 export async function onRequestPost({ request, env }) {
   if (request.headers.get("Origin") !== new URL(request.url).origin) return json({ error: "Request origin rejected." }, 403);
-  if (!env.DB || !env.PAYSTACK_SECRET_KEY) return json({ error: "Payment service is not configured." }, 503);
+  if (!env.DB || !isPaystackKeyAllowed(env)) return json({ error: "Paystack key does not match the configured safe payment mode." }, 503);
   try {
     const user = await getUser(request, env);
     if (!user?.id) return json({ error: "Please sign in again." }, 401);
