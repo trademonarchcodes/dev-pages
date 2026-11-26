@@ -12,16 +12,45 @@ const menu=document.querySelector(".menu-toggle"),nav=document.querySelector(".n
 menu?.addEventListener("click",()=>{const open=nav.classList.toggle("open");menu.setAttribute("aria-expanded",String(open))});
 nav?.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>{nav.classList.remove("open");menu?.setAttribute("aria-expanded","false")}));
 const form=document.getElementById("name-form"),input=document.getElementById("name-input"),note=document.getElementById("search-note"),results=document.getElementById("domain-results");
-function slugify(value){return value.toLowerCase().trim().replace(/^https?:\\/\\//,"").replace(/\\s+/g,"").replace(/\\.pages\\.dev$/i,"").replace(/\\.[a-z]{2,}$/i,"").replace(/[^a-z0-9-]/g,"").replace(/-+/g,"-").replace(/^-|-$/g,"").slice(0,40)}
+function slugify(value){return value.toLowerCase().trim().replace(/^https?:\/\//,"").replace(/\s+/g,"").replace(/\.pages\.dev$/i,"").replace(/\.[a-z]{2,}$/i,"").replace(/[^a-z0-9-]/g,"").replace(/-+/g,"-").replace(/^-|-$/g,"").slice(0,40)}$/i,"").replace(/[^a-z0-9-]/g,"").replace(/-+/g,"-").replace(/^-|-$/g,"").slice(0,40)}
 form?.addEventListener("submit",async e=>{
- e.preventDefault();const base=slugify(input.value);results.replaceChildren();
+ e.preventDefault();
+ const base=slugify(input.value);
+ results.replaceChildren();
  if(!base){note.textContent="Enter a name using letters or numbers to begin.";return;}
  const card=document.createElement("article");card.className="domain-result pages-domain-result";
  const name=document.createElement("strong");name.textContent=base+".pages.dev";
- const status=document.createElement("span");status.className="domain-status unknown";status.textContent="Name format looks good";
- const detail=document.createElement("small");detail.textContent="This is your exact requested address. Sign in and connect your hosting account to proceed to the live project-name check. DEVPAGES will not add random characters or reserve a name before Cloudflare confirms it.";
+ const status=document.createElement("span");status.className="domain-status unknown";status.textContent="Checking your connected Cloudflare account…";
+ const detail=document.createElement("small");detail.textContent="Checking the exact name. This will not reserve or create a project.";
  card.append(name,status,detail);results.append(card);
- note.textContent="Your requested address is "+base+".pages.dev. Live availability confirmation and project creation will be enabled after secure account sign-in and hosting connection are complete.";
+ note.textContent="Checking "+base+".pages.dev against your connected Cloudflare Pages account…";
+ try{
+  const response=await fetch("/api/domain-check",{method:"POST",credentials:"same-origin",cache:"no-store",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify({name:base})});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok||!data.ok){
+   status.className="domain-status unknown";
+   status.textContent=data.code==="HOSTING_NOT_CONNECTED"?"Cloudflare account not connected":"Could not complete the check";
+   detail.textContent=data.message||"Please sign in and connect your Cloudflare account, then try again.";
+   if(data.code==="HOSTING_NOT_CONNECTED"){
+    const link=document.createElement("a");link.href="/connect-hosting.html";link.className="text-link";link.textContent="Connect Cloudflare →";card.append(link);
+   }
+   note.textContent=detail.textContent;
+   return;
+  }
+  if(data.foundInAccount){
+   status.className="domain-status unavailable";status.textContent="Already in use in your account";
+   detail.textContent="A Pages project with this exact name already exists in the connected Cloudflare account. Choose another name or manage that project directly in Cloudflare.";
+  }else{
+   status.className="domain-status available";status.textContent="No matching project found in your account";
+   detail.textContent="Cloudflare did not find this name in your connected account. This does not reserve the address or guarantee global availability; Cloudflare performs the final check when a project is created.";
+  }
+  note.textContent="Exact name checked: "+base+".pages.dev. No random characters have been added.";
+ }catch(error){
+  status.className="domain-status unknown";status.textContent="Connection error";
+  detail.textContent="We could not reach the DEVPAGES name-check service. Check your connection and try again.";
+  note.textContent=detail.textContent;
+  console.error("DEVPAGES name check:",error);
+ }
 });
  
 const sharedReviewApi="https://script.google.com/macros/s/AKfycbxDZFklxGHXDh-kNwVO10IeIMMLLLz99H_5K5dTsgVnuaO5Xd_OLJGX-w0Deryliy5nYA/exec";
