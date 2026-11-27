@@ -14,7 +14,7 @@ export async function onRequestPost({ request, env }) {
     if (!domainId) return json({ error: "Select a domain to delete." }, 400);
 
     const domain = await env.DB.prepare(
-      "SELECT id, user_id, project_name, hostname, cloudflare_account_id, status FROM managed_domains WHERE id = ? AND user_id = ? AND status != 'deleted'"
+      "SELECT id, user_id, project_name, hostname, cloudflare_account_id, status FROM managed_domains WHERE id = ? AND user_id = ? AND deleted_at IS NULL"
     ).bind(domainId, user.id).first();
 
     if (!domain) return json({ error: "Domain not found or already deleted." }, 404);
@@ -38,7 +38,7 @@ export async function onRequestPost({ request, env }) {
     }
 
     await env.DB.prepare(
-      "UPDATE managed_domains SET status = 'deleted', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?"
+      "UPDATE managed_domains SET deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ? AND deleted_at IS NULL"
     ).bind(domain.id, user.id).run();
 
     return json({ success: true, message: domain.hostname + " has been deleted from DEVPAGES." });
