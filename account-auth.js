@@ -298,13 +298,36 @@ async function loadDeveloperProfile(user) {
   const note = $("developer-profile-message");
   try {
     const { data: profile, error } = await supabase.from("developer_profiles")
-      .select("slug,display_name,bio,website_url,show_credit")
+      .select("slug,display_name,bio,website_url,show_credit,avatar_url")
       .eq("id", user.id).single();
     if (error) throw error;
     $("developer-display-name").value = profile.display_name || "";
     $("developer-bio").value = profile.bio || "";
     $("developer-website").value = profile.website_url || "";
     $("developer-show-credit").checked = profile.show_credit !== false;
+    const avatarPreview = $("developer-avatar-preview");
+    const avatarPlaceholder = $("developer-avatar-placeholder");
+    const avatarFile = $("developer-avatar-file");
+    if (profile.avatar_url) {
+      avatarPreview.src = profile.avatar_url;
+      avatarPreview.hidden = false;
+      avatarPlaceholder.hidden = true;
+    }
+    avatarFile?.addEventListener("change", () => {
+      const file = avatarFile.files?.[0];
+      if (!file) return;
+      if (!["image/jpeg","image/png","image/webp"].includes(file.type) || file.size > 2 * 1024 * 1024) {
+        avatarFile.value = "";
+        note.textContent = "Choose a JPG, PNG or WebP image no larger than 2 MB.";
+        note.style.color = "#ff8b94";
+        return;
+      }
+      avatarPreview.src = URL.createObjectURL(file);
+      avatarPreview.hidden = false;
+      avatarPlaceholder.hidden = true;
+      note.textContent = "Image selected. Save your profile to upload it.";
+      note.style.color = "#9db9e8";
+    });
     const profileUrl = location.origin + "/developer.html?u=" + encodeURIComponent(profile.slug);
     const link = $("developer-profile-link");
     link.href = profileUrl;
@@ -330,13 +353,30 @@ async function loadDeveloperProfile(user) {
         }
         setBusy(button, true, "Saving profile…");
         try {
+          let avatarUrl = profile.avatar_url || null;
+          const avatarFile = $("developer-avatar-file")?.files?.[0];
+          if (avatarFile) {
+            const extension = avatarFile.type === "image/png" ? "png" : avatarFile.type === "image/webp" ? "webp" : "jpg";
+            const objectPath = user.id + "/avatar." + extension;
+            const { error: uploadError } = await supabase.storage.from("developer-avatars").upload(objectPath, avatarFile, {
+              cacheControl: "3600", upsert: true, contentType: avatarFile.type
+            });
+            if (uploadError) throw uploadError;
+            avatarUrl = supabase.storage.from("developer-avatars").getPublicUrl(objectPath).data.publicUrl;
+          }
           const { error: saveError } = await supabase.from("developer_profiles").update({
             display_name: displayName, bio, website_url: website || null,
-            show_credit: $("developer-show-credit").checked
+            show_credit: $("developer-show-credit").checked,
+            avatar_url: avatarUrl
           }).eq("id", user.id);
           if (saveError) throw saveError;
           await supabase.auth.updateUser({ data: { preferred_developer_name: displayName, full_name: displayName } });
           $("account-name").textContent = displayName;
+          if (avatarFile) {
+            profile.avatar_url = avatarUrl;
+            $("developer-avatar-file").value = "";
+            avatarPreview.src = avatarUrl;
+          }
           note.textContent = "Developer profile saved.";
           note.style.color = "#63d7a3";
           showMessage("Your developer identity has been updated.");
