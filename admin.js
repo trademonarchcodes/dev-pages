@@ -5,17 +5,21 @@ const money=k=>"₦"+(Number(k||0)/100).toLocaleString("en-NG",{maximumFractionD
 const date=v=>{if(!v)return "—";const d=new Date(v);return isNaN(d)?"—":d.toLocaleString("en-NG",{dateStyle:"medium",timeStyle:"short"});};
 const badge=s=>'<span class="admin-status '+esc(String(s||"").toLowerCase())+'">'+esc(s||"unknown")+"</span>";
 const countdown=v=>{if(!v)return "No expiry recorded";const n=new Date(v).getTime()-Date.now();if(!Number.isFinite(n))return "Expiry unavailable";if(n<=0)return "Expired · awaiting status update";return Math.floor(n/86400000)+"d "+Math.floor(n%86400000/3600000)+"h "+Math.floor(n%3600000/60000)+"m remaining";};
-let session,data;
+let session,data,websiteQuery="",websiteStatus="all";
 const setError=(s,ok=false)=>{$("admin-error").textContent=s||"";$("admin-error").style.color=ok?"#8ff0c1":"#ffabb6";};
 function cloudCard(a){const pc=Math.min(100,Number(a.capacity_percent||0));return '<article class="admin-devcloud-card"><div class="admin-devcloud-head"><div><strong>'+esc(a.label)+'</strong><small>Account · '+esc(a.account_id)+'</small></div>'+badge(a.status)+'</div><div class="admin-slots"><strong>'+Number(a.slots_left||0)+'</strong><span>slots left of '+Number(a.slot_limit||100)+'</span></div><div class="admin-capacity-track"><div class="admin-capacity-fill" style="width:'+pc+'%"></div></div><div class="admin-devcloud-foot"><span>'+Number(a.slots_used||0)+' used · '+pc+'%</span><span>'+(a.is_default?"Default allocator":"Standby")+'</span></div><div class="admin-devcloud-controls">'+(a.status==="active"?'<button class="admin-action" data-action="deactivate" data-id="'+esc(a.id)+'">Disable</button>':'<button class="admin-action" data-action="activate" data-id="'+esc(a.id)+'">Set active & default</button>')+(a.source!=="environment"?'<button class="admin-action" data-action="reconnect" data-id="'+esc(a.id)+'">Update credential</button>':'')+'</div></article>';}
-function render(){
- const s=data.stats||{},accounts=data.devcloud||[],sites=data.websites||[],payments=data.payments||[];
- $("admin-email").textContent=data.admin.email;$("sidebar-admin-email").textContent=data.admin.email;
- for(const [id,val] of Object.entries({"stat-customers":s.customers??0,"stat-websites":s.websites??0,"stat-payments":s.successful_payments??0,"stat-revenue":money(s.revenue_kobo),"stat-active":s.active_websites??0,"stat-expiring":s.expiring_soon??0,"stat-suspended":s.suspended_websites??0,"stat-pending":s.pending_payments??0}))$(id).textContent=val;
- $("devcloud-list").innerHTML=accounts.map(cloudCard).join("")||'<div class="admin-empty">No DevCloud accounts registered.</div>';
- $("overview-devcloud").innerHTML=accounts.map(cloudCard).join("")||'<div class="admin-empty">No DevCloud accounts available.</div>';
- $("website-count").textContent=sites.length+" records";
- $("websites-table").innerHTML='<table class="admin-table"><thead><tr><th>Website</th><th>Customer ID</th><th>DevCloud</th><th>Status</th><th>Countdown</th><th>Created</th></tr></thead><tbody>'+sites.map(w=>{const a=accounts.find(x=>x.account_id===w.cloudflare_account_id);const shownStatus=w.deleted_at?'removed':w.status;return '<tr><td><strong>'+esc(w.hostname||w.project_name||"Website")+'</strong><br><span class="admin-muted">'+esc(w.project_name||"")+'</span></td><td>'+esc(w.user_id)+'</td><td>'+esc(a?.label||w.cloudflare_account_id||"Unassigned")+'</td><td>'+badge(shownStatus)+'</td><td><span class="admin-countdown '+(countdown(w.expires_at).startsWith("Expired")?"expired":"")+'" data-expiry="'+esc(w.expires_at||"")+'">'+esc(countdown(w.expires_at))+'</span></td><td>'+esc(date(w.created_at))+'</td></tr>';}).join("")+'</tbody></table>';
+function renderWebsites(sites,accounts){
+ const filtered=sites.filter(w=>{
+  const term=websiteQuery.toLowerCase();
+  const match=!term||[w.hostname,w.project_name,w.user_id,w.cloudflare_account_id].some(v=>String(v||"").toLowerCase().includes(term));
+  const st=w.deleted_at?"removed":String(w.status||"").toLowerCase();
+  return match&&(websiteStatus==="all"||st===websiteStatus);
+ });
+ const active=sites.filter(w=>!w.deleted_at&&w.status==="active").length;
+ const removed=sites.filter(w=>!!w.deleted_at).length;
+ const suspended=sites.filter(w=>!w.deleted_at&&w.status==="suspended").length;
+ const expiring=sites.filter(w=>!w.deleted_at&&w.status==="active"&&w.expires_at&&new Date(w.expires_at)-Date.now()<=604800000).length;
+ renderWebsites(sites,accounts);
  const attention=sites.filter(w=>!w.deleted_at&&(w.status==="suspended"||(w.status==="active"&&w.expires_at&&new Date(w.expires_at)-Date.now()<=604800000))).slice(0,8);
  $("overview-expiring").innerHTML=attention.map(w=>'<article class="admin-domain-card"><div><strong>'+esc(w.hostname||w.project_name||"Website")+'</strong><small>'+esc(w.status)+' · '+esc(w.user_id)+'</small></div><div class="admin-domain-side">'+badge(w.status)+'<div class="admin-countdown '+(countdown(w.expires_at).startsWith("Expired")?"expired":"")+'" data-expiry="'+esc(w.expires_at||"")+'">'+esc(countdown(w.expires_at))+'</div></div></article>').join("")||'<div class="admin-empty">No domains currently need attention.</div>';
  $("payment-count").textContent=payments.length+" recent records";
