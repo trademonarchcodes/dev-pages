@@ -18,7 +18,13 @@ export async function onRequestPost({ request, env }) {
 
     // Existing websites keep their assigned account. New websites use the admin-selected active DevCloud.
     let selected = null;
-    try { selected = await env.DB.prepare("SELECT account_id FROM devcloud_accounts WHERE status='active' AND is_default=1 LIMIT 1").first(); } catch {}
+    let registryCount = 0;
+    try {
+      selected = await env.DB.prepare("SELECT account_id FROM devcloud_accounts WHERE status='active' AND is_default=1 LIMIT 1").first();
+      const count = await env.DB.prepare("SELECT COUNT(*) AS total FROM devcloud_accounts").first();
+      registryCount = Number(count?.total || 0);
+    } catch {}
+    if (registryCount > 0 && !selected) return json({ error: "DEVPAGES hosting is temporarily unavailable. Please contact support." }, 503);
     const accountId = selected?.account_id || PLATFORM_CF_ACCOUNT_ID;
     const {tokens} = await getCloudflareAccessToken(env, user.id, accountId);
     const cf = await fetch("https://api.cloudflare.com/client/v4/accounts/" + encodeURIComponent(accountId) + "/pages/projects", {
