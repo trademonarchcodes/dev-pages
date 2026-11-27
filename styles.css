@@ -187,3 +187,30 @@ p,.hero-lead,.section-heading p,.pricing-head p,.page-intro p,.notice-panel p,.p
 .homepage footer{font-family:'Outfit','Space Grotesk',sans-serif}
 .homepage footer small,.homepage footer p{color:#aebed5}
 @media(max-width:760px){.homepage .hero{padding-top:72px;padding-bottom:68px}.homepage .hero h1{font-size:clamp(48px,13vw,72px)}.homepage .hero-lead{font-size:16px}.homepage .section-heading h2,.homepage .steps-section h2,.homepage .pricing-head h2,.homepage .faq-section h2,.homepage .final-cta h2{font-weight:800;letter-spacing:-.055em}.homepage .step{padding:21px}}
+
+
+/* Lively homepage feature-card sections */
+.homepage .features-section,.homepage .audience-section{width:min(1160px,calc(100% - 44px));margin:0 auto;padding:100px 0}
+.homepage .features-heading{display:grid;grid-template-columns:1.1fr .7fr;align-items:end;gap:40px;margin-bottom:36px}
+.homepage .features-heading h2,.homepage .audience-section h2{font:800 clamp(38px,6vw,66px)/.98 'Outfit',sans-serif;letter-spacing:-.06em;margin:18px 0 0}
+.homepage .features-heading h2 span,.homepage .audience-section h2 span{background:linear-gradient(100deg,#8bffe0,#69cfff 55%,#91aaff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.homepage .features-heading>p{max-width:390px;color:#aebed5;font:500 16px/1.8 'Outfit',sans-serif;margin:0 0 4px}
+.homepage .features-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:17px}
+.homepage .feature-card{position:relative;isolation:isolate;overflow:hidden;min-height:260px;padding:27px;border-radius:18px;border:1px solid rgba(111,169,238,.2);background:linear-gradient(145deg,rgba(19,36,61,.9),rgba(8,17,31,.94));text-decoration:none;color:#f4f8ff;display:flex;flex-direction:column;align-items:flex-start;transition:transform .28s ease,border-color .28s ease,box-shadow .28s ease,background .28s ease}
+.homepage .feature-card:hover{transform:translateY(-8px);border-color:rgba(115,239,229,.72);background:linear-gradient(145deg,rgba(24,57,88,.98),rgba(9,22,40,.98));box-shadow:0 22px 50px rgba(0,0,0,.32),0 0 32px rgba(67,176,255,.13)}
+.homepage .feature-card:focus-visible{outline:3px solid #83ffe2;outline-offset:4px}
+.homepage .feature-icon{width:48px;height:48px;display:grid;place-items:center;border-radius:14px;background:linear-gradient(140deg,rgba(139,255,224,.17),rgba(91,157,255,.16));border:1px solid rgba(117,215,255,.28);color:#8bffe0;font-size:25px;margin-bottom:25px}
+.homepage .feature-label{font:800 10px 'Outfit',sans-serif;letter-spacing:.13em;color:#78dfff}
+.homepage .feature-card h3{font:800 23px/1.12 'Outfit',sans-serif;letter-spacing:-.035em;margin:12px 0 10px;max-width:270px}
+.homepage .feature-card p{font:500 14px/1.7 'Outfit',sans-serif;color:#aebed5;margin:0 0 22px;max-width:330px}
+.homepage .feature-arrow{font:800 12px 'Outfit',sans-serif;color:#8bffe0;margin-top:auto}
+.homepage .feature-featured{background:radial-gradient(circle at 100% 0,rgba(65,157,255,.25),transparent 48%),linear-gradient(145deg,#142d4b,#0a172a)}
+.homepage .feature-orb{position:absolute;z-index:-1;width:170px;height:170px;border-radius:50%;right:-65px;top:35px;border:1px solid rgba(110,213,255,.16);box-shadow:0 0 0 22px rgba(95,180,255,.035),0 0 0 46px rgba(95,180,255,.025)}
+.homepage .audience-section{padding-top:35px;padding-bottom:100px;text-align:center}
+.homepage .audience-section h2{margin:16px 0 34px}
+.homepage .audience-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.homepage .audience-chip{display:flex;align-items:center;justify-content:center;gap:10px;padding:18px 12px;border:1px solid rgba(111,169,238,.2);border-radius:14px;background:rgba(15,29,49,.65);color:#c8d8ef;font:700 13px 'Outfit',sans-serif;transition:.22s}
+.homepage .audience-chip:hover{transform:translateY(-4px);border-color:#72dfff;color:#fff;box-shadow:0 12px 30px rgba(45,138,255,.12)}
+.homepage .audience-chip b{font-size:20px;color:#83ffe2}
+@media(max-width:850px){.homepage .features-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.homepage .audience-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:600px){.homepage .features-section,.homepage .audience-section{width:min(100% - 32px,1160px);padding:68px 0}.homepage .features-heading{grid-template-columns:1fr;gap:18px;margin-bottom:25px}.homepage .features-heading>p{font-size:14px}.homepage .features-grid{grid-template-columns:1fr;gap:13px}.homepage .feature-card{min-height:220px;padding:23px}.homepage .feature-icon{margin-bottom:19px}.homepage .audience-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.homepage .audience-chip{font-size:12px;padding:15px 8px}}
