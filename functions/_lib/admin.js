@@ -1,7 +1,7 @@
 import { json, getUser } from "./billing.js";
 export async function requireAdmin(request, env) {
   const user = await getUser(request, env);
-  const allowed = String(env.DEVPAGES_ADMIN_EMAIL || "").trim().toLowerCase();
+  const allowed = String(env.DEVPAGES_ADMIN_EMAIL || "devlyonofficial@gmail.com").trim().toLowerCase();
   if (!user?.id || !user.email || !user.email_confirmed_at || !allowed || user.email.toLowerCase() !== allowed) return null;
   return user;
 }
