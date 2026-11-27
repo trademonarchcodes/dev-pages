@@ -354,13 +354,11 @@ async function loadBillingStatus(user) {
       const cloudName = (payload.hosting_accounts || []).find(a => a.account_id === domain.cloudflare_account_id)?.label || "Assigned DevCloud";
       const cloudLine = document.createElement("p"); cloudLine.textContent = "Hosted on: " + cloudName;
       const status = document.createElement("p"); status.textContent = "Status: " + domain.status.replaceAll("_", " ");
-      const countdown = document.createElement("p");
-      countdown.style.cssText = "margin:12px 0 7px;color:#b9c9df;font-size:13px";
-      const expiryTrack = document.createElement("div");
-      expiryTrack.style.cssText = "height:6px;width:100%;overflow:hidden;border-radius:99px;background:#24344b;margin:0 0 12px";
-      const expiryFill = document.createElement("div");
-      expiryFill.style.cssText = "height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#2878ff,#42d9ff);transition:width 1s linear";
-      expiryTrack.append(expiryFill);
+      const countdown = document.createElement("button");
+      countdown.type = "button";
+      countdown.disabled = true;
+      countdown.setAttribute("aria-live","polite");
+      countdown.style.cssText = "display:block;width:100%;margin:13px 0 8px;padding:13px 12px;border:1px solid #3b506b;border-radius:12px;background:#263447;color:#fff;font:700 14px 'Space Grotesk',sans-serif;text-align:center;letter-spacing:.2px;box-shadow:inset 0 1px 0 #ffffff12;opacity:1;cursor:default";
       card.append(heading,cloudLine,status);
 
       const siteActions = document.createElement("div");
@@ -408,10 +406,11 @@ async function loadBillingStatus(user) {
         const updateCountdown = () => {
           const remaining = Math.max(0, expiresAt - Date.now());
           const elapsed = Math.min(100, Math.max(0, ((cycleMs - remaining) / cycleMs) * 100));
-          expiryFill.style.width = elapsed + "%";
+          countdown.style.background = "linear-gradient(90deg,#176fe8 0%,#258cff " + elapsed + "%,#263447 " + elapsed + "%,#263447 100%)";
+          countdown.style.borderColor = elapsed > 0 ? "#2878ff" : "#3b506b";
           if (remaining <= 0) {
             countdown.textContent = "30-day period complete · Hosting suspension processing";
-            expiryFill.style.background = "#f59e0b";
+            countdown.style.background = "linear-gradient(90deg,#176fe8 100%,#263447 100%)";
           } else {
             const days = Math.floor(remaining / 86400000);
             const hours = Math.floor((remaining % 86400000) / 3600000);
@@ -423,13 +422,16 @@ async function loadBillingStatus(user) {
         updateCountdown();
         const countdownTimer = setInterval(updateCountdown, 1000);
         window.addEventListener("pagehide", () => clearInterval(countdownTimer), { once:true });
-        card.append(countdown,expiryTrack);
+        card.append(countdown);
       } else if (domain.status === "suspended") {
         countdown.textContent = "Subscription expired · Website suspended";
-        expiryFill.style.width = "100%";
-        expiryFill.style.background = "#ef5968";
-        expiryTrack.style.background = "#4b202d";
-        card.append(countdown,expiryTrack);
+        countdown.textContent = "Subscription expired · Renew for ₦5,500 →";
+        countdown.disabled = false;
+        countdown.style.cursor = "pointer";
+        countdown.style.background = "linear-gradient(90deg,#176fe8,#258cff)";
+        countdown.style.borderColor = "#2878ff";
+        countdown.addEventListener("click", () => card.querySelector(".auth-submit")?.click());
+        card.append(countdown);
       } else if (domain.expires_at) {
         countdown.textContent = (domain.is_expired ? "Subscription expired" : domain.days_remaining + " day(s) remaining") + " · Expires " + new Date(domain.expires_at).toLocaleDateString();
         card.append(countdown);
@@ -516,6 +518,7 @@ async function loadBillingStatus(user) {
         const button = document.createElement("button"); button.className = "auth-submit";
         const purpose = domain.status === "pending_payment" ? "setup" : "renewal";
         button.textContent = purpose === "setup" ? "Pay ₦16,000 setup →" : "Renew for ₦5,500 →";
+        if (purpose === "renewal") button.style.display = "none";
         button.addEventListener("click", async () => {
           button.disabled = true; button.textContent = "Opening secure checkout…";
           try {
