@@ -354,6 +354,34 @@ async function loadBillingStatus(user) {
       const countdown = document.createElement("p");
       countdown.textContent = domain.expires_at ? (domain.is_expired ? "Subscription expired" : domain.days_remaining + " day(s) remaining") + " · Expires " + new Date(domain.expires_at).toLocaleDateString() : "Awaiting setup payment";
       card.append(heading,cloudLine,status,countdown);
+      const reconnect = document.createElement("button");
+      reconnect.type = "button";
+      reconnect.className = "auth-submit";
+      reconnect.textContent = "Reconnect Hosting ↻";
+      reconnect.style.cssText = "margin-top:10px;width:auto;padding:10px 14px";
+      reconnect.addEventListener("click", async () => {
+        reconnect.disabled = true;
+        reconnect.textContent = "Reconnecting…";
+        try {
+          const session = await supabase.auth.getSession();
+          const accessToken = session.data.session?.access_token;
+          const response = await fetch("/api/hosting/reconnect", {
+            method: "POST",
+            headers: { Authorization: "Bearer " + accessToken, "Content-Type": "application/json" },
+            body: JSON.stringify({ domain_id: domain.id })
+          });
+          const result = await response.json();
+          if (!response.ok || !result.success) throw new Error(result.error || "Hosting could not be reconnected.");
+          showMessage(result.message || "Hosting connection restored.");
+          await loadBillingStatus(user);
+        } catch (error) {
+          showMessage(error.message || "Hosting could not be reconnected. Please contact DEVPAGES support.", "error");
+        } finally {
+          reconnect.disabled = false;
+          reconnect.textContent = "Reconnect Hosting ↻";
+        }
+      });
+      card.append(reconnect);
       if (domain.status === "pending_payment" || domain.status === "suspended" || domain.status === "active") {
         const button = document.createElement("button"); button.className = "auth-submit";
         const purpose = domain.status === "pending_payment" ? "setup" : "renewal";
