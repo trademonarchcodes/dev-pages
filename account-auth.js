@@ -458,6 +458,13 @@ async function loadBillingStatus(user) {
                 return {path,content:await toBase64(file),content_type:mimeMap[ext]};
               }));
             }
+            if (!files.some(file => file.path.toLowerCase() === "index.html")) {
+              const nestedIndex = files.find(file => file.path.toLowerCase().endsWith("/index.html"));
+              const prefix = nestedIndex?.path.split("/")[0];
+              if (prefix && files.every(file => file.path.startsWith(prefix + "/"))) {
+                for (const file of files) file.path = file.path.slice(prefix.length + 1);
+              }
+            }
             const homepage = files.find(file => file.path.toLowerCase() === "index.html");
             if (!homepage) throw new Error("To publish a website update, select index.html together with its related CSS, JavaScript, images and PDF files. Images or PDFs can be included as website assets, but cannot replace the homepage by themselves.");
             const response = await fetch("/api/domains/deploy", {method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({domain_id:domain.id,files})});
