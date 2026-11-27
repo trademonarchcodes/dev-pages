@@ -311,7 +311,6 @@ async function loadBillingStatus(user) {
         : "Per domain: " + money(payload.pricing.setup_ngn) + " setup + " + money(payload.pricing.renewal_ngn) + " every 30 days.";
     const cloudMenu = $("member-cloud-menu");
     const cloudOptions = $("member-cloud-options");
-    const cloudSummary = $("member-cloud-summary");
     let selectedCloud = cloudMenu?.dataset.selected || "all";
     const applyCloudFilter = (selected, label) => {
       selectedCloud = selected;
@@ -319,9 +318,6 @@ async function loadBillingStatus(user) {
       list.querySelectorAll("[data-cloud-account]").forEach(card => {
         card.hidden = selected !== "all" && card.dataset.cloudAccount !== selected;
       });
-      if (cloudSummary) cloudSummary.textContent = selected === "all"
-        ? "Showing websites across all your DevCloud accounts."
-        : "Showing websites assigned to " + label + ". They remain connected to their original hosting account.";
       if (cloudMenu) cloudMenu.open = false;
     };
     if (cloudOptions) {
@@ -330,7 +326,9 @@ async function loadBillingStatus(user) {
         const option = document.createElement("button");
         option.type = "button";
         option.textContent = label + countText;
-        option.style.cssText = "width:100%;text-align:left;padding:11px 12px;border:0;border-radius:8px;background:transparent;color:#edf3ff;cursor:pointer";
+        option.style.cssText = "width:100%;text-align:left;padding:12px 14px;border:0;border-radius:9px;background:transparent;color:#edf3ff;font:500 14px 'Space Grotesk',sans-serif;cursor:pointer;transition:background .18s";
+        option.addEventListener("mouseenter",()=>option.style.background="#1b3150");
+        option.addEventListener("mouseleave",()=>option.style.background="transparent");
         option.addEventListener("click", () => applyCloudFilter(value, label));
         cloudOptions.append(option);
       };
@@ -354,12 +352,24 @@ async function loadBillingStatus(user) {
       const countdown = document.createElement("p");
       countdown.textContent = domain.expires_at ? (domain.is_expired ? "Subscription expired" : domain.days_remaining + " day(s) remaining") + " · Expires " + new Date(domain.expires_at).toLocaleDateString() : "Awaiting setup payment";
       card.append(heading,cloudLine,status,countdown);
+      const cardActions = document.createElement("details");
+      cardActions.style.cssText = "position:absolute;top:14px;right:14px;z-index:5";
+      card.style.position = "relative";
+      const actionToggle = document.createElement("summary");
+      actionToggle.textContent = "⋯";
+      actionToggle.setAttribute("aria-label","Website options");
+      actionToggle.title = "Website options";
+      actionToggle.style.cssText = "list-style:none;cursor:pointer;display:grid;place-items:center;width:36px;height:36px;border:1px solid #304563;border-radius:11px;background:#111f33;color:#dceaff;font-size:23px;line-height:1";
+      const actionMenu = document.createElement("div");
+      actionMenu.style.cssText = "position:absolute;right:0;top:43px;min-width:190px;padding:6px;border:1px solid #304563;border-radius:13px;background:#101c2d;box-shadow:0 16px 38px #0009;display:grid;gap:4px";
       const reconnect = document.createElement("button");
       reconnect.type = "button";
-      reconnect.className = "auth-submit";
-      reconnect.textContent = "Reconnect Hosting ↻";
-      reconnect.style.cssText = "margin-top:10px;width:auto;padding:10px 14px";
+      reconnect.textContent = "↻  Reconnect Hosting";
+      reconnect.style.cssText = "width:100%;text-align:left;padding:11px 12px;border:0;border-radius:8px;background:transparent;color:#e8f1ff;font:500 14px 'Space Grotesk',sans-serif;cursor:pointer";
+      reconnect.addEventListener("mouseenter",()=>reconnect.style.background="#1b3150");
+      reconnect.addEventListener("mouseleave",()=>reconnect.style.background="transparent");
       reconnect.addEventListener("click", async () => {
+        cardActions.open = false;
         reconnect.disabled = true;
         reconnect.textContent = "Reconnecting…";
         try {
@@ -378,10 +388,12 @@ async function loadBillingStatus(user) {
           showMessage(error.message || "Hosting could not be reconnected. Please contact DEVPAGES support.", "error");
         } finally {
           reconnect.disabled = false;
-          reconnect.textContent = "Reconnect Hosting ↻";
+          reconnect.textContent = "↻  Reconnect Hosting";
         }
       });
-      card.append(reconnect);
+      actionMenu.append(reconnect);
+      cardActions.append(actionToggle,actionMenu);
+      card.append(cardActions);
       if (domain.status === "pending_payment" || domain.status === "suspended" || domain.status === "active") {
         const button = document.createElement("button"); button.className = "auth-submit";
         const purpose = domain.status === "pending_payment" ? "setup" : "renewal";
