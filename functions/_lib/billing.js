@@ -158,7 +158,7 @@ export async function deployPagesFiles(env,domain,files,options={}) {
   const uploadToken=uploadTokenData.result?.jwt;
   if(!uploadTokenResponse.ok||!uploadToken)throw new Error("Could not authorize website upload: "+(uploadTokenData.errors?.[0]?.message||"DEVPAGES could not authorize this website upload."));
   const specialNames=new Set(["_headers","_redirects","_routes.json"]);
-  const hasHomepage=files.some(file=>file.path.replace(/^\\/+/, "").toLowerCase()==="index.html");
+  const hasHomepage=files.some(file=>file.path.replace(/^\/+/, "").toLowerCase()==="index.html");
   const saved=await env.DB.prepare("SELECT manifest_json,special_files_json FROM managed_domain_manifests WHERE domain_id=?").bind(domain.id).first();
   let manifest={};
   let specialFiles={};
@@ -174,7 +174,7 @@ export async function deployPagesFiles(env,domain,files,options={}) {
   if(hasHomepage) { manifest={}; specialFiles={}; }
   const uploadItems=[];
   for(const file of assetFiles) {
-    const path="/"+file.path.replace(/^\\/+/, "");
+    const path="/"+file.path.replace(/^\/+/, "");
     const dot=path.lastIndexOf("."),slash=path.lastIndexOf("/");
     const extension=dot>slash?path.slice(dot+1):"";
     const hash=blake3Hex(file.content+extension).slice(0,32);
