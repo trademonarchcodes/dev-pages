@@ -50,7 +50,11 @@ export async function onRequestPost({ request, env }) {
     }
 
     const actualName = result.result?.name || name;
-    const hostname = actualName + ".pages.dev";
+    const returnedSubdomain = String(result.result?.subdomain || "").trim().toLowerCase();
+    const hostname = returnedSubdomain
+      ? (returnedSubdomain.endsWith(".pages.dev") ? returnedSubdomain : returnedSubdomain + ".pages.dev")
+      : actualName + ".pages.dev";
+    const requestedHostname = name + ".pages.dev";
     const promo = isPromoUser(user) && Date.now() < Date.parse(PROMO_ACCESS_END);
     const id = crypto.randomUUID();
     const expiry = promo ? PROMO_ACCESS_END : null;
@@ -69,6 +73,8 @@ export async function onRequestPost({ request, env }) {
 
     return json({
       domain: { id, hostname, status: promo ? "provisioning" : "pending_payment", expires_at: expiry },
+      requested_hostname: requestedHostname,
+      name_changed: hostname !== requestedHostname,
       promo,
       setup_fee_ngn: promo ? 0 : 16000
     });
