@@ -94,7 +94,7 @@
 .mobile-workbar,.workspace-overlay{display:none}
 @media(min-width:1500px){.workspace-sidebar{width:280px;flex-basis:280px;padding-left:22px;padding-right:22px}.workspace-content{padding-top:48px}}
 @media(max-width:900px){.workspace-sidebar{width:225px;flex-basis:225px}.workspace-content{padding:30px 24px 65px}.workspace-topbar{padding:0 24px}}
-@media(max-width:700px){
+@media(max-width:900px){
 .dev-workspace{display:block;padding:0}.mobile-workbar{height:66px;position:sticky;top:0;z-index:55;display:flex;align-items:center;gap:14px;padding:0 16px;background:rgba(8,14,25,.96);border-bottom:1px solid rgba(120,160,255,.18);backdrop-filter:blur(14px)}
 .workspace-menu-toggle{width:40px;height:40px;border:1px solid #2c4668;border-radius:10px;background:#101e32;color:#eaf3ff;font-size:20px;cursor:pointer}
 .workspace-mobile-brand{display:flex;align-items:center;margin-right:auto}.workspace-mobile-brand img{width:122px;height:39px;object-fit:contain}
