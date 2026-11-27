@@ -37,6 +37,7 @@ else{
   name.textContent=data.display_name||"Developer";
   bio.textContent=data.bio||"Building digital experiences and publishing ideas with DEVPAGES.";
   document.title=(data.display_name||"Developer")+" | DEVPAGES";
+  if(data.avatar_url){avatar.src=data.avatar_url;avatar.hidden=false;}
   if(data.website_url){portfolio.href=data.website_url;portfolio.hidden=false;}
  }
 }
