@@ -57,10 +57,10 @@ export async function getCloudflareAccessToken(env, userId, accountId) {
   if(!row)throw new Error("Hosting connection is unavailable. Please contact DEVPAGES support.");
   let tokens=await decryptConnection(row,env.CF_TOKEN_ENCRYPTION_KEY);
   if(tokens.expires_at && tokens.expires_at < Date.now()+60000) {
-    if(!tokens.refresh_token)throw new Error("Cloudflare authorization expired. Reconnect your Cloudflare account.");
+    if(!tokens.refresh_token)throw new Error("DEVPAGES hosting authorization needs attention. Please contact DEVPAGES support.");
     const refresh=await fetch("https://dash.cloudflare.com/oauth2/token",{method:"POST",headers:{"Content-Type":"application/x-www-form-urlencoded",Accept:"application/json"},body:new URLSearchParams({grant_type:"refresh_token",refresh_token:tokens.refresh_token,client_id:env.CF_OAUTH_CLIENT_ID,client_secret:env.CF_OAUTH_CLIENT_SECRET})});
     const fresh=await refresh.json();
-    if(!refresh.ok||!fresh.access_token)throw new Error("Cloudflare authorization expired. Reconnect your Cloudflare account.");
+    if(!refresh.ok||!fresh.access_token)throw new Error("DEVPAGES hosting authorization needs attention. Please contact DEVPAGES support.");
     tokens={...tokens,access_token:fresh.access_token,refresh_token:fresh.refresh_token||tokens.refresh_token,expires_at:fresh.expires_in?Date.now()+Number(fresh.expires_in)*1000:null};
     const encrypted=await encryptConnection(tokens,env.CF_TOKEN_ENCRYPTION_KEY);
     await env.DB.prepare("UPDATE cloudflare_connections SET token_ciphertext=?,token_iv=?,updated_at=CURRENT_TIMESTAMP WHERE user_id=?").bind(encrypted.ciphertext,encrypted.iv,userId).run();
@@ -68,7 +68,7 @@ export async function getCloudflareAccessToken(env, userId, accountId) {
   return {tokens,accounts:JSON.parse(row.accounts_json||"[]")};
 }
 export async function provisionPagesProject(env, domain) {
-  if(!domain.cloudflare_account_id)throw new Error("The connected Cloudflare account is missing.");
+  if(!domain.cloudflare_account_id)throw new Error("The assigned DEVPAGES hosting account is missing.");
   const {tokens}=await getCloudflareAccessToken(env,domain.user_id,domain.cloudflare_account_id);
   const endpoint="https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(domain.cloudflare_account_id)+"/pages/projects/"+encodeURIComponent(domain.project_name);
   const existing=await fetch(endpoint,{headers:{Authorization:"Bearer "+tokens.access_token}});
@@ -156,7 +156,7 @@ export async function deployPagesFiles(env,domain,files,options={}) {
   const uploadTokenResponse=await fetch(base+projectPath+"/upload-token",{headers:auth});
   const uploadTokenData=await uploadTokenResponse.json();
   const uploadToken=uploadTokenData.result?.jwt;
-  if(!uploadTokenResponse.ok||!uploadToken)throw new Error("Could not authorize website upload: "+(uploadTokenData.errors?.[0]?.message||"Cloudflare upload token unavailable."));
+  if(!uploadTokenResponse.ok||!uploadToken)throw new Error("Could not authorize website upload: "+(uploadTokenData.errors?.[0]?.message||"DEVPAGES could not authorize this website upload."));
   const specialNames=new Set(["_headers","_redirects","_routes.json"]);
   const assetFiles=files.filter(file=>!specialNames.has(file.path));
   const specialFiles=files.filter(file=>specialNames.has(file.path));
@@ -174,11 +174,11 @@ export async function deployPagesFiles(env,domain,files,options={}) {
   for(let i=0;i<uploadItems.length;i+=100) {
     const uploaded=await fetch(base+"/pages/assets/upload",{method:"POST",headers:{Authorization:"Bearer "+uploadToken,"Content-Type":"application/json"},body:JSON.stringify(uploadItems.slice(i,i+100))});
     const data=await uploaded.json();
-    if(!uploaded.ok||!data.success)throw new Error(data.errors?.[0]?.message||"Cloudflare rejected one or more website files.");
+    if(!uploaded.ok||!data.success)throw new Error(data.errors?.[0]?.message||"DEVPAGES could not accept one or more website files.");
   }
   const registered=await fetch(base+"/pages/assets/upsert-hashes",{method:"POST",headers:{Authorization:"Bearer "+uploadToken,"Content-Type":"application/json"},body:JSON.stringify({hashes:Object.values(manifest)})});
   const registeredData=await registered.json();
-  if(!registered.ok||!registeredData.success)throw new Error(registeredData.errors?.[0]?.message||"Cloudflare could not register uploaded website assets.");
+  if(!registered.ok||!registeredData.success)throw new Error(registeredData.errors?.[0]?.message||"DEVPAGES could not register the uploaded website files.");
   const form=new FormData();
   form.set("manifest",JSON.stringify(manifest));
   for(const file of specialFiles) {
@@ -189,7 +189,7 @@ export async function deployPagesFiles(env,domain,files,options={}) {
   form.set("commit_message","Published through DEVPAGES");
   const deployment=await fetch(base+projectPath+"/deployments",{method:"POST",headers:auth,body:form});
   const result=await deployment.json();
-  if(!deployment.ok||!result.success)throw new Error(result.errors?.[0]?.message||"Cloudflare could not publish this website.");
+  if(!deployment.ok||!result.success)throw new Error(result.errors?.[0]?.message||"DEVPAGES could not publish this website.");
   if(options.suspension) {
     await env.DB.prepare("UPDATE managed_domains SET status='suspended', suspended_deployment_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='provisioning'").bind(result.result?.id||null,domain.id).run();
   } else {
