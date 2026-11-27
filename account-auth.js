@@ -333,8 +333,40 @@ async function loadDeveloperProfile(user) {
     });
     const profileUrl = location.origin + "/developer.html?u=" + encodeURIComponent(profile.slug);
     const link = $("developer-profile-link");
-    link.href = profileUrl;
-    link.textContent = profileUrl;
+    if (link) {
+      link.href = profileUrl;
+      link.textContent = profileUrl;
+    }
+    const copyProfileLink = $("copy-developer-profile-link");
+    if (copyProfileLink && !copyProfileLink.dataset.bound) {
+      copyProfileLink.dataset.bound = "1";
+      copyProfileLink.addEventListener("click", async () => {
+        const originalLabel = "▢ Copy link";
+        try {
+          if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(profileUrl);
+          } else {
+            const field = document.createElement("textarea");
+            field.value = profileUrl;
+            field.style.cssText = "position:fixed;left:-9999px;top:0;opacity:0";
+            document.body.append(field);
+            field.select();
+            const copied = document.execCommand("copy");
+            field.remove();
+            if (!copied) throw new Error("Clipboard unavailable");
+          }
+          copyProfileLink.textContent = "✓ Copied";
+          copyProfileLink.classList.add("is-copied");
+          window.setTimeout(() => {
+            copyProfileLink.textContent = originalLabel;
+            copyProfileLink.classList.remove("is-copied");
+          }, 1800);
+        } catch {
+          copyProfileLink.textContent = "Copy unavailable";
+          window.setTimeout(() => { copyProfileLink.textContent = originalLabel; }, 2200);
+        }
+      });
+    }
     if (!form.dataset.bound) {
       form.dataset.bound = "1";
       form.addEventListener("submit", async (event) => {
@@ -462,11 +494,13 @@ async function loadBillingStatus(user) {
     const websitesEmpty = $("websites-empty-state");
     const billingEmpty = $("billing-empty-state");
     if (websitesEmpty) websitesEmpty.hidden = hostingReady;
-    if (billingEmpty) billingEmpty.hidden = hostingReady;
-    for (const sectionId of ["projects-card","domains-section","payments-section"]) {
+    if (billingEmpty) billingEmpty.hidden = true;
+    for (const sectionId of ["projects-card","domains-section"]) {
       const section = $(sectionId);
       if (section) section.hidden = !payload.account.hosting_connected;
     }
+    const paymentsSection = $("payments-section");
+    if (paymentsSection) paymentsSection.hidden = false;
     if (domainForm) {
       for (const control of domainForm.elements) control.disabled = !payload.account.hosting_connected;
       domainForm.style.opacity = payload.account.hosting_connected ? "1" : ".45";
