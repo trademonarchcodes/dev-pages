@@ -309,31 +309,36 @@ async function loadBillingStatus(user) {
       : payload.account.promo_eligible && payload.promotion.active
         ? "Launch promotion active until 16 January 2027. Each eligible domain has its own countdown."
         : "Per domain: " + money(payload.pricing.setup_ngn) + " setup + " + money(payload.pricing.renewal_ngn) + " every 30 days.";
-    const cloudFilter = $("member-cloud-filter");
+    const cloudMenu = $("member-cloud-menu");
+    const cloudOptions = $("member-cloud-options");
     const cloudSummary = $("member-cloud-summary");
-    if (cloudFilter) {
-      const current = cloudFilter.value || "all";
-      cloudFilter.replaceChildren();
-      const allOption = document.createElement("option"); allOption.value = "all"; allOption.textContent = "All DevClouds"; cloudFilter.append(allOption);
+    let selectedCloud = cloudMenu?.dataset.selected || "all";
+    const applyCloudFilter = (selected, label) => {
+      selectedCloud = selected;
+      if (cloudMenu) cloudMenu.dataset.selected = selected;
+      list.querySelectorAll("[data-cloud-account]").forEach(card => {
+        card.hidden = selected !== "all" && card.dataset.cloudAccount !== selected;
+      });
+      if (cloudSummary) cloudSummary.textContent = selected === "all"
+        ? "Showing websites across all your DevCloud accounts."
+        : "Showing websites assigned to " + label + ". They remain connected to their original hosting account.";
+      if (cloudMenu) cloudMenu.open = false;
+    };
+    if (cloudOptions) {
+      cloudOptions.replaceChildren();
+      const addCloudOption = (value, label, countText = "") => {
+        const option = document.createElement("button");
+        option.type = "button";
+        option.textContent = label + countText;
+        option.style.cssText = "width:100%;text-align:left;padding:11px 12px;border:0;border-radius:8px;background:transparent;color:#edf3ff;cursor:pointer";
+        option.addEventListener("click", () => applyCloudFilter(value, label));
+        cloudOptions.append(option);
+      };
+      addCloudOption("all", "All DevClouds");
       for (const account of (payload.hosting_accounts || [])) {
-        const option = document.createElement("option"); option.value = account.account_id;
-        option.textContent = account.label + " · " + account.websites + " website(s)";
-        cloudFilter.append(option);
+        addCloudOption(account.account_id, account.label, " · " + account.websites + " website(s)");
       }
-      cloudFilter.value = [...cloudFilter.options].some(o => o.value === current) ? current : "all";
-      if (!cloudFilter.dataset.bound) {
-        cloudFilter.dataset.bound = "1";
-        cloudFilter.addEventListener("change", () => {
-          const selected = cloudFilter.value;
-          list.querySelectorAll("[data-cloud-account]").forEach(card => {
-            card.hidden = selected !== "all" && card.dataset.cloudAccount !== selected;
-          });
-          if (cloudSummary) cloudSummary.textContent = selected === "all"
-            ? "Showing websites across all your DevCloud accounts. Existing websites remain connected where they were created."
-            : "Showing websites assigned to this DevCloud. Switching views does not move or disconnect websites.";
-        });
-      }
-      if (cloudSummary) cloudSummary.textContent = "Your websites remain connected to their assigned DevCloud, even when you switch this view.";
+      applyCloudFilter(selectedCloud, selectedCloud === "all" ? "All DevClouds" : (payload.hosting_accounts || []).find(a => a.account_id === selectedCloud)?.label || "selected DevCloud");
     }
     list.replaceChildren();
     if (!payload.domains.length) {
