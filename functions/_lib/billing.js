@@ -158,20 +158,9 @@ export async function deployPagesFiles(env,domain,files,options={}) {
   const uploadToken=uploadTokenData.result?.jwt;
   if(!uploadTokenResponse.ok||!uploadToken)throw new Error("Could not authorize website upload: "+(uploadTokenData.errors?.[0]?.message||"DEVPAGES could not authorize this website upload."));
   const specialNames=new Set(["_headers","_redirects","_routes.json"]);
-  const hasHomepage=files.some(file=>file.path.replace(/^\/+/, "").toLowerCase()==="index.html");
-  const saved=await env.DB.prepare("SELECT manifest_json,special_files_json FROM managed_domain_manifests WHERE domain_id=?").bind(domain.id).first();
-  let manifest={};
-  let specialFiles={};
-  if(!hasHomepage) {
-    if(!saved?.manifest_json||!JSON.parse(saved.manifest_json)["/index.html"])throw new Error("This website has not been published yet. Upload your complete website ZIP or include index.html with your first upload. After the first successful publication, you can upload images, PDFs, CSS and JavaScript files separately.");
-    try {
-      manifest=JSON.parse(saved.manifest_json);
-      specialFiles=JSON.parse(saved.special_files_json||"{}");
-    } catch { throw new Error("The saved website file list could not be read. Upload your complete website ZIP to rebuild it safely."); }
-  }
   const assetFiles=files.filter(file=>!specialNames.has(file.path));
-  const incomingSpecial=files.filter(file=>specialNames.has(file.path));
-  if(hasHomepage) { manifest={}; specialFiles={}; }
+  const specialFiles=files.filter(file=>specialNames.has(file.path));
+  const manifest={};
   const uploadItems=[];
   for(const file of assetFiles) {
     const path="/"+file.path.replace(/^\/+/, "");
@@ -182,28 +171,25 @@ export async function deployPagesFiles(env,domain,files,options={}) {
     manifest[path]=hash;
     uploadItems.push({key:hash,value:file.content,base64:true,metadata:{contentType:mime}});
   }
-  if(!manifest["/index.html"])throw new Error("Your first website publication must include an index.html homepage at the root of the upload.");
-  for(const file of incomingSpecial) specialFiles[file.path]=file.content;
   for(let i=0;i<uploadItems.length;i+=100) {
     const uploaded=await fetch(base+"/pages/assets/upload",{method:"POST",headers:{Authorization:"Bearer "+uploadToken,"Content-Type":"application/json"},body:JSON.stringify(uploadItems.slice(i,i+100))});
     const data=await uploaded.json();
     if(!uploaded.ok||!data.success)throw new Error(data.errors?.[0]?.message||"DEVPAGES could not accept one or more website files.");
   }
-  const registered=await fetch(base+"/pages/assets/upsert-hashes",{method:"POST",headers:{Authorization:"Bearer "+uploadToken,"Content-Type":"application/json"},body:JSON.stringify({hashes:[...new Set(Object.values(manifest))]})});
+  const registered=await fetch(base+"/pages/assets/upsert-hashes",{method:"POST",headers:{Authorization:"Bearer "+uploadToken,"Content-Type":"application/json"},body:JSON.stringify({hashes:Object.values(manifest)})});
   const registeredData=await registered.json();
   if(!registered.ok||!registeredData.success)throw new Error(registeredData.errors?.[0]?.message||"DEVPAGES could not register the uploaded website files.");
   const form=new FormData();
   form.set("manifest",JSON.stringify(manifest));
-  for(const [path,content] of Object.entries(specialFiles)) {
-    const bytes=Uint8Array.from(atob(content),ch=>ch.charCodeAt(0));
-    form.set(path,new Blob([bytes],{type:path==="_routes.json"?"application/json":"text/plain"}),path);
+  for(const file of specialFiles) {
+    const bytes=Uint8Array.from(atob(file.content),ch=>ch.charCodeAt(0));
+    form.set(file.path,new Blob([bytes],{type:file.content_type||"text/plain"}),file.path);
   }
   form.set("branch","main");
-  form.set("commit_message",hasHomepage?"Published website through DEVPAGES":"Updated website assets through DEVPAGES");
+  form.set("commit_message","Published through DEVPAGES");
   const deployment=await fetch(base+projectPath+"/deployments",{method:"POST",headers:auth,body:form});
   const result=await deployment.json();
   if(!deployment.ok||!result.success)throw new Error(result.errors?.[0]?.message||"DEVPAGES could not publish this website.");
-  await env.DB.prepare("INSERT INTO managed_domain_manifests(domain_id,manifest_json,special_files_json,updated_at) VALUES(?,?,?,CURRENT_TIMESTAMP) ON CONFLICT(domain_id) DO UPDATE SET manifest_json=excluded.manifest_json,special_files_json=excluded.special_files_json,updated_at=CURRENT_TIMESTAMP").bind(domain.id,JSON.stringify(manifest),JSON.stringify(specialFiles)).run();
   if(options.suspension) {
     await env.DB.prepare("UPDATE managed_domains SET status='suspended', suspended_deployment_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='provisioning'").bind(result.result?.id||null,domain.id).run();
   } else {
