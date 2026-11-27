@@ -503,8 +503,8 @@ async function loadBillingStatus(user) {
               }));
             }
             if (!files.some(file => file.path.toLowerCase() === "index.html")) {
-              const firstSegments = files.map(file => file.path.split("/")[0]);
-              const prefix = firstSegments[0];
+              const nestedIndex = files.find(file => file.path.toLowerCase().endsWith("/index.html"));
+              const prefix = nestedIndex?.path.split("/")[0];
               if (prefix && files.every(file => file.path.startsWith(prefix + "/"))) {
                 for (const file of files) file.path = file.path.slice(prefix.length + 1);
               }
