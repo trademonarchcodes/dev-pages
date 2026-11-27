@@ -5,16 +5,18 @@ const json = (data, status = 200) => new Response(JSON.stringify(data), {
 
 export async function onRequestGet({ request, env }) {
   const origin = request.headers.get("Origin");
-  if (origin && origin !== new URL(request.url).origin) return json({ error: "Request origin rejected." }, 403);
+  if (origin && origin !== new URL(request.url).origin) {
+    return json({ error: "Request origin rejected." }, 403);
+  }
 
-  const token = (request.headers.get("Authorization") || "").replace(/^Bearer\\s+/i, "");
+  const token = (request.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
   if (!token) return json({ error: "Please sign in." }, 401);
   if (!env.SUPABASE_URL || !env.SUPABASE_PUBLISHABLE_KEY || !env.DB) {
     return json({ error: "Payment history service is not configured." }, 503);
   }
 
   try {
-    const auth = await fetch(env.SUPABASE_URL.replace(/\\/$/, "") + "/auth/v1/user", {
+    const auth = await fetch(env.SUPABASE_URL.replace(/\/$/, "") + "/auth/v1/user", {
       headers: { apikey: env.SUPABASE_PUBLISHABLE_KEY, Authorization: "Bearer " + token }
     });
     if (!auth.ok) return json({ error: "Your session has expired. Please sign in again." }, 401);
