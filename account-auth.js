@@ -362,6 +362,46 @@ async function loadBillingStatus(user) {
       expiryFill.style.cssText = "height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#2878ff,#42d9ff);transition:width 1s linear";
       expiryTrack.append(expiryFill);
       card.append(heading,cloudLine,status);
+
+      const siteActions = document.createElement("div");
+      siteActions.style.cssText = "display:flex;gap:9px;flex-wrap:wrap;margin:12px 0 4px";
+      const copyDomain = document.createElement("button");
+      copyDomain.type = "button";
+      copyDomain.textContent = "▢  Copy domain";
+      copyDomain.style.cssText = "flex:1;min-width:125px;padding:10px 13px;border:1px solid #365078;border-radius:10px;background:#14243b;color:#eaf2ff;font:600 13px 'Space Grotesk',sans-serif;cursor:pointer";
+      copyDomain.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(domain.hostname);
+          copyDomain.textContent = "✓  Copied";
+          showMessage(domain.hostname + " copied to clipboard.");
+          setTimeout(() => { copyDomain.textContent = "▢  Copy domain"; }, 1800);
+        } catch {
+          const field = document.createElement("textarea");
+          field.value = domain.hostname;
+          field.style.position = "fixed";
+          field.style.opacity = "0";
+          document.body.append(field);
+          field.select();
+          const copied = document.execCommand("copy");
+          field.remove();
+          if (copied) {
+            copyDomain.textContent = "✓  Copied";
+            showMessage(domain.hostname + " copied to clipboard.");
+            setTimeout(() => { copyDomain.textContent = "▢  Copy domain"; }, 1800);
+          } else {
+            showMessage("Could not copy automatically. Domain: " + domain.hostname, "error");
+          }
+        }
+      });
+      const visitSite = document.createElement("a");
+      visitSite.href = "https://" + domain.hostname;
+      visitSite.target = "_blank";
+      visitSite.rel = "noopener noreferrer";
+      visitSite.textContent = "↗  Visit site";
+      visitSite.style.cssText = "flex:1;min-width:125px;display:flex;align-items:center;justify-content:center;padding:10px 13px;border:1px solid #2878ff;border-radius:10px;background:linear-gradient(110deg,#1765df,#168fc4);color:#fff;text-decoration:none;font:600 13px 'Space Grotesk',sans-serif";
+      siteActions.append(copyDomain,visitSite);
+      card.append(siteActions);
+
       if (domain.expires_at && domain.status === "active") {
         const expiresAt = new Date(domain.expires_at).getTime();
         const cycleMs = 30 * 86400000;
