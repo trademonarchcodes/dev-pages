@@ -355,8 +355,48 @@ async function loadBillingStatus(user) {
       const cloudLine = document.createElement("p"); cloudLine.textContent = "Hosted on: " + cloudName;
       const status = document.createElement("p"); status.textContent = "Status: " + domain.status.replaceAll("_", " ");
       const countdown = document.createElement("p");
-      countdown.textContent = domain.expires_at ? (domain.is_expired ? "Subscription expired" : domain.days_remaining + " day(s) remaining") + " · Expires " + new Date(domain.expires_at).toLocaleDateString() : "Awaiting setup payment";
-      card.append(heading,cloudLine,status,countdown);
+      countdown.style.cssText = "margin:12px 0 7px;color:#b9c9df;font-size:13px";
+      const expiryTrack = document.createElement("div");
+      expiryTrack.style.cssText = "height:6px;width:100%;overflow:hidden;border-radius:99px;background:#24344b;margin:0 0 12px";
+      const expiryFill = document.createElement("div");
+      expiryFill.style.cssText = "height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,#2878ff,#42d9ff);transition:width 1s linear";
+      expiryTrack.append(expiryFill);
+      card.append(heading,cloudLine,status);
+      if (domain.expires_at && domain.status === "active") {
+        const expiresAt = new Date(domain.expires_at).getTime();
+        const cycleMs = 30 * 86400000;
+        const updateCountdown = () => {
+          const remaining = Math.max(0, expiresAt - Date.now());
+          const elapsed = Math.min(100, Math.max(0, ((cycleMs - remaining) / cycleMs) * 100));
+          expiryFill.style.width = elapsed + "%";
+          if (remaining <= 0) {
+            countdown.textContent = "30-day period complete · Hosting suspension processing";
+            expiryFill.style.background = "#f59e0b";
+          } else {
+            const days = Math.floor(remaining / 86400000);
+            const hours = Math.floor((remaining % 86400000) / 3600000);
+            const minutes = Math.floor((remaining % 3600000) / 60000);
+            const seconds = Math.floor((remaining % 60000) / 1000);
+            countdown.textContent = days + "d " + String(hours).padStart(2,"0") + "h " + String(minutes).padStart(2,"0") + "m " + String(seconds).padStart(2,"0") + "s remaining · renews every 30 days";
+          }
+        };
+        updateCountdown();
+        const countdownTimer = setInterval(updateCountdown, 1000);
+        window.addEventListener("pagehide", () => clearInterval(countdownTimer), { once:true });
+        card.append(countdown,expiryTrack);
+      } else if (domain.status === "suspended") {
+        countdown.textContent = "Subscription expired · Website suspended";
+        expiryFill.style.width = "100%";
+        expiryFill.style.background = "#ef5968";
+        expiryTrack.style.background = "#4b202d";
+        card.append(countdown,expiryTrack);
+      } else if (domain.expires_at) {
+        countdown.textContent = (domain.is_expired ? "Subscription expired" : domain.days_remaining + " day(s) remaining") + " · Expires " + new Date(domain.expires_at).toLocaleDateString();
+        card.append(countdown);
+      } else {
+        countdown.textContent = "Awaiting setup payment";
+        card.append(countdown);
+      }
       const cardActions = document.createElement("details");
       cardActions.style.cssText = "position:absolute;top:14px;right:14px;z-index:5";
       card.style.position = "relative";
@@ -432,7 +472,7 @@ async function loadBillingStatus(user) {
       actionMenu.append(deleteDomain);
       cardActions.append(actionToggle,actionMenu);
       card.append(cardActions);
-      if (domain.status === "pending_payment" || domain.status === "suspended" || domain.status === "active") {
+      if (domain.status === "pending_payment" || domain.status === "suspended") {
         const button = document.createElement("button"); button.className = "auth-submit";
         const purpose = domain.status === "pending_payment" ? "setup" : "renewal";
         button.textContent = purpose === "setup" ? "Pay ₦16,000 setup →" : "Renew for ₦5,500 →";
