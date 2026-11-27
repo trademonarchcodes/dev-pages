@@ -221,32 +221,6 @@ if (resetForm) {
   });
 }
 
-const cloudflareConnect = $("cloudflare-connect-button");
-if (cloudflareConnect) {
-  const params = new URLSearchParams(location.search);
-  const status = params.get("cloudflare");
-  if (status === "connected") showMessage("Cloudflare account connected. Your authorization is saved securely.");
-  else if (status === "cancelled") showMessage("Cloudflare authorization was cancelled.", "error");
-  else if (status === "failed") showMessage("Cloudflare connection could not be completed. Check the setup and try again.", "error");
-  if (status) history.replaceState({}, "", "/account.html");
-  cloudflareConnect.addEventListener("click", async () => {
-    setBusy(cloudflareConnect, true, "Connecting…");
-    try {
-      const { data, error } = await supabase.auth.getSession();
-      if (error || !data.session?.access_token) throw new Error("Please sign in again before connecting Cloudflare.");
-      const response = await fetch("/api/cloudflare/connect", {
-        method: "POST",
-        headers: { Authorization: "Bearer " + data.session.access_token, "Content-Type": "application/json" }
-      });
-      const result = await response.json();
-      if (!response.ok || !result.authorization_url) throw new Error(result.error || "Unable to start Cloudflare authorization.");
-      location.assign(result.authorization_url);
-    } catch (error) {
-      showMessage(friendlyError(error), "error");
-      setBusy(cloudflareConnect, false);
-    }
-  });
-}
 const signout = $("signout-button");
 if (signout) {
   signout.addEventListener("click", async () => {
@@ -298,16 +272,12 @@ async function loadBillingStatus(user) {
       for (const control of domainForm.elements) control.disabled = !payload.account.hosting_connected;
       domainForm.style.opacity = payload.account.hosting_connected ? "1" : ".45";
     }
-    if (connectButton) {
-      connectButton.textContent = payload.account.hosting_connected ? "Reconnect Cloudflare account ↻" : "Connect my Cloudflare account →";
-      connectButton.disabled = false;
-    }
     const cloudflareStatus = $("cloudflare-status");
-    if (cloudflareStatus) cloudflareStatus.textContent = payload.account.hosting_connected ? "Cloudflare account authorized" : "Secure authorization required";
+    if (cloudflareStatus) cloudflareStatus.textContent = payload.account.hosting_connected ? "DEVPAGES hosting is connected" : "Hosting setup in progress";
     const projectStatus = $("project-status");
     if (projectStatus) projectStatus.textContent = payload.account.hosting_connected ? "Hosting access enabled" : "Hosting access locked";
     summary.textContent = !payload.account.hosting_connected
-      ? "Hosting is locked. Connect your Cloudflare account above to unlock domain creation and website publishing."
+      ? "DEVPAGES hosting is temporarily unavailable. Please try again later."
       : payload.account.promo_eligible && payload.promotion.active
         ? "Launch promotion active until 16 January 2027. Each eligible domain has its own countdown."
         : "Per domain: " + money(payload.pricing.setup_ngn) + " setup + " + money(payload.pricing.renewal_ngn) + " every 30 days.";
