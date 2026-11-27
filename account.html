@@ -45,9 +45,19 @@
 </form>
 <p id="developer-profile-message" class="field-hint developer-profile-message" aria-live="polite"></p>
 </section>
-<section class="dashboard-view" data-dashboard-view="billing">
-<div class="workspace-page-heading"><div><div class="auth-kicker">ACCOUNT ACTIVITY</div><h1>Billing & payments<span>.</span></h1><p>Review payment records for your DEVPAGES hosting subscriptions.</p></div></div>
-<section class="dash-card" id="payments-section"><small>PAYMENTS</small><h2>Payment history</h2><div id="payment-history" style="display:grid;gap:10px;margin-top:14px">Loading payment history…</div></section>
-<div class="dash-card workspace-empty-state" id="billing-empty-state"><span>↗</span><h2>Payment history</h2><p>Your completed hosting payments will appear here.</p></div>
 </section>
-</div></div></main><script type="module" src="/account-auth.js"></script></body></html>
+<section class="dashboard-view billing-dashboard" data-dashboard-view="billing">
+  <div class="workspace-page-heading billing-page-heading">
+    <div><div class="auth-kicker">ACCOUNT ACTIVITY</div><h1>Billing & payments<span>.</span></h1><p>Track every DEVPAGES hosting payment in one place.</p></div>
+    <button type="button" class="billing-refresh-button" id="refresh-payment-history">↻ Refresh</button>
+  </div>
+  <section class="billing-overview-grid" aria-label="Payment overview">
+    <article class="billing-stat-card"><span class="billing-stat-icon">₦</span><div><small>TOTAL PAID</small><strong id="billing-total-paid">—</strong><span>Successful payments</span></div></article>
+    <article class="billing-stat-card"><span class="billing-stat-icon">✓</span><div><small>SUCCESSFUL</small><strong id="billing-success-count">—</strong><span>Confirmed transactions</span></div></article>
+    <article class="billing-stat-card"><span class="billing-stat-icon">◷</span><div><small>PENDING</small><strong id="billing-pending-count">—</strong><span>Awaiting confirmation</span></div></article>
+  </section>
+  <section class="dash-card billing-history-panel" id="payments-section">
+    <div class="billing-history-heading"><div><small>TRANSACTION RECORDS</small><h2>Payment history</h2><p>Your recent setup and renewal payments.</p></div><span class="billing-secure-label"><i></i> Secure records</span></div>
+    <div id="payment-history" class="payment-history-list" aria-live="polite"><div class="billing-state"><span class="billing-loader"></span><strong>Loading your transactions</strong><p>Retrieving your payment history securely.</p></div></div>
+  </section>
+</section></div></div></main><script type="module" src="/account-auth.js"></script></body></html>
