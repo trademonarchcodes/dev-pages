@@ -18,7 +18,7 @@ export async function onRequestGet({ request, env }) {
     const registered = new Date(user.created_at);
     const promoEligible = registered >= new Date(PROMO_START) && registered < new Date(PROMO_END);
     const result = await env.DB.prepare(
-      "SELECT id, project_name, hostname, status, promo_eligible, activated_at, expires_at, created_at, cloudflare_account_id FROM managed_domains WHERE user_id = ? ORDER BY created_at DESC"
+      "SELECT id, project_name, hostname, status, promo_eligible, activated_at, expires_at, created_at, cloudflare_account_id FROM managed_domains WHERE user_id = ? AND status != 'deleted' ORDER BY created_at DESC"
     ).bind(user.id).all();
     const paymentResult = await env.DB.prepare(
       "SELECT reference, domain_id, purpose, amount_kobo, currency, status, paid_at, created_at FROM domain_payments WHERE user_id = ? ORDER BY created_at DESC LIMIT 100"
