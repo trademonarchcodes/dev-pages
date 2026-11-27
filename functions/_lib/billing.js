@@ -26,14 +26,14 @@ export async function verifyPaystack(reference, secret) {
   if (!response.ok || !data.status || data.data?.status !== "success") throw new Error("Paystack has not confirmed this payment.");
   return data.data;
 }
-async function decryptConnection(row, keyText) {
+export async function decryptConnection(row, keyText) {
   const raw=Uint8Array.from(atob(keyText),c=>c.charCodeAt(0));
   if(raw.length!==32)throw new Error("Cloudflare token encryption key is invalid.");
   const key=await crypto.subtle.importKey("raw",raw,"AES-GCM",false,["decrypt"]);
   const plain=await crypto.subtle.decrypt({name:"AES-GCM",iv:row.token_iv},key,row.token_ciphertext);
   return JSON.parse(new TextDecoder().decode(plain));
 }
-async function encryptConnection(tokens,keyText) {
+export async function encryptConnection(tokens,keyText) {
   const raw=Uint8Array.from(atob(keyText),c=>c.charCodeAt(0));
   const key=await crypto.subtle.importKey("raw",raw,"AES-GCM",false,["encrypt"]);
   const iv=crypto.getRandomValues(new Uint8Array(12));
@@ -42,11 +42,19 @@ async function encryptConnection(tokens,keyText) {
 }
 export const PLATFORM_CF_ACCOUNT_ID = "94f36f03ea5e3bdba6ca60c32b024936";
 export async function getCloudflareAccessToken(env, userId, accountId) {
+  if (accountId && accountId !== PLATFORM_CF_ACCOUNT_ID && env.DB) {
+    const managed = await env.DB.prepare("SELECT account_id,token_ciphertext,token_iv,source FROM devcloud_accounts WHERE account_id=? AND status='active'").bind(accountId).first();
+    if (managed?.source === "environment" && env.CF_API_TOKEN) return { tokens: { access_token: env.CF_API_TOKEN }, accounts: [{ id: accountId }] };
+    if (managed?.token_ciphertext && env.CF_TOKEN_ENCRYPTION_KEY) {
+      const tokens = await decryptConnection(managed, env.CF_TOKEN_ENCRYPTION_KEY);
+      return { tokens, accounts: [{ id: accountId }] };
+    }
+  }
   if (env.CF_API_TOKEN && (!accountId || accountId === PLATFORM_CF_ACCOUNT_ID)) {
     return { tokens: { access_token: env.CF_API_TOKEN }, accounts: [{ id: PLATFORM_CF_ACCOUNT_ID }] };
   }
   const row=await env.DB.prepare("SELECT accounts_json,token_ciphertext,token_iv FROM cloudflare_connections WHERE user_id=?").bind(userId).first();
-  if(!row)throw new Error("Connect your Cloudflare account first.");
+  if(!row)throw new Error("Hosting connection is unavailable. Please contact DEVPAGES support.");
   let tokens=await decryptConnection(row,env.CF_TOKEN_ENCRYPTION_KEY);
   if(tokens.expires_at && tokens.expires_at < Date.now()+60000) {
     if(!tokens.refresh_token)throw new Error("Cloudflare authorization expired. Reconnect your Cloudflare account.");
