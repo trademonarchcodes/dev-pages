@@ -40,7 +40,11 @@ async function encryptConnection(tokens,keyText) {
   const ciphertext=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,new TextEncoder().encode(JSON.stringify(tokens)));
   return {iv,ciphertext:new Uint8Array(ciphertext)};
 }
-export async function getCloudflareAccessToken(env, userId) {
+export const PLATFORM_CF_ACCOUNT_ID = "94f36f03ea5e3bdba6ca60c32b024936";
+export async function getCloudflareAccessToken(env, userId, accountId) {
+  if (env.CF_API_TOKEN && (!accountId || accountId === PLATFORM_CF_ACCOUNT_ID)) {
+    return { tokens: { access_token: env.CF_API_TOKEN }, accounts: [{ id: PLATFORM_CF_ACCOUNT_ID }] };
+  }
   const row=await env.DB.prepare("SELECT accounts_json,token_ciphertext,token_iv FROM cloudflare_connections WHERE user_id=?").bind(userId).first();
   if(!row)throw new Error("Connect your Cloudflare account first.");
   let tokens=await decryptConnection(row,env.CF_TOKEN_ENCRYPTION_KEY);
@@ -57,7 +61,7 @@ export async function getCloudflareAccessToken(env, userId) {
 }
 export async function provisionPagesProject(env, domain) {
   if(!domain.cloudflare_account_id)throw new Error("The connected Cloudflare account is missing.");
-  const {tokens}=await getCloudflareAccessToken(env,domain.user_id);
+  const {tokens}=await getCloudflareAccessToken(env,domain.user_id,domain.cloudflare_account_id);
   const endpoint="https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(domain.cloudflare_account_id)+"/pages/projects/"+encodeURIComponent(domain.project_name);
   const existing=await fetch(endpoint,{headers:{Authorization:"Bearer "+tokens.access_token}});
   if(existing.ok)return true;
@@ -137,7 +141,7 @@ function blake3Hex(value){
 export function blake3SelfTest(){return blake3Hex("abc")==="6437b3ac38465133ffb63b75273a8db548c558465d79db03fd359c6cd5bd9d85";}
 
 export async function deployPagesFiles(env,domain,files,options={}) {
-  const {tokens}=await getCloudflareAccessToken(env,domain.user_id);
+  const {tokens}=await getCloudflareAccessToken(env,domain.user_id,domain.cloudflare_account_id);
   const base="https://api.cloudflare.com/client/v4";
   const auth={Authorization:"Bearer "+tokens.access_token};
   const projectPath="/accounts/"+encodeURIComponent(domain.cloudflare_account_id)+"/pages/projects/"+encodeURIComponent(domain.project_name);
@@ -207,7 +211,7 @@ export async function applyPayment(env, payment, transaction) {
     if(payment.purpose === "setup") await provisionPagesProject(env,domain);
     if(payment.purpose === "renewal" && domain.status === "suspended") {
       if(!domain.original_deployment_id)throw new Error("The original website deployment could not be found. Contact DEVPAGES support before retrying renewal.");
-      const {tokens}=await getCloudflareAccessToken(env,domain.user_id);
+      const {tokens}=await getCloudflareAccessToken(env,domain.user_id,domain.cloudflare_account_id);
       const restore=await fetch("https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(domain.cloudflare_account_id)+"/pages/projects/"+encodeURIComponent(domain.project_name)+"/deployments/"+encodeURIComponent(domain.original_deployment_id)+"/rollback",{method:"POST",headers:{Authorization:"Bearer "+tokens.access_token}});
       const restored=await restore.json();
       if(!restore.ok||!restored.success)throw new Error(restored.errors?.[0]?.message||"Payment was verified, but website restoration failed. Please contact support.");
