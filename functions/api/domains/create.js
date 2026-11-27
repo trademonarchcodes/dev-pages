@@ -44,7 +44,7 @@ export async function onRequestPost({ request, env }) {
       // Avoid leaving an untracked Pages project behind if the database insert fails.
       await fetch("https://api.cloudflare.com/client/v4/accounts/" + encodeURIComponent(accountId) + "/pages/projects/" + encodeURIComponent(actualName), {
         method: "DELETE",
-        headers: { Authorization: "Bearer " + tokens.access_token }
+        headers: { Authorization: "Bearer " + env.CF_API_TOKEN }
       }).catch(() => {});
       throw databaseError;
     }
