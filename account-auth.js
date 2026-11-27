@@ -420,6 +420,10 @@ async function loadBillingStatus(user) {
       }
       list.append(card);
     }
+    if (cloudMenu) {
+      const selectedLabel = selectedCloud === "all" ? "All DevClouds" : (payload.hosting_accounts || []).find(a => a.account_id === selectedCloud)?.label || "selected DevCloud";
+      applyCloudFilter(selectedCloud, selectedLabel);
+    }
     const history = $("payment-history");
     if (history) {
       history.replaceChildren();
