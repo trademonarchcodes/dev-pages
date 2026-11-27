@@ -354,22 +354,44 @@ async function loadDeveloperProfile(user) {
         setBusy(button, true, "Saving profile…");
         try {
           let avatarUrl = profile.avatar_url || null;
+          let uploadedAvatarPath = null;
+          let previousAvatarPath = null;
           const avatarFile = $("developer-avatar-file")?.files?.[0];
+          const avatarBucket = supabase.storage.from("developer-avatars");
           if (avatarFile) {
             const extension = avatarFile.type === "image/png" ? "png" : avatarFile.type === "image/webp" ? "webp" : "jpg";
-            const objectPath = user.id + "/avatar." + extension;
-            const { error: uploadError } = await supabase.storage.from("developer-avatars").upload(objectPath, avatarFile, {
+            uploadedAvatarPath = user.id + "/avatar." + extension;
+            if (profile.avatar_url) {
+              try {
+                const previousUrl = new URL(profile.avatar_url);
+                const marker = "/object/public/developer-avatars/";
+                const markerIndex = previousUrl.pathname.indexOf(marker);
+                if (markerIndex >= 0) previousAvatarPath = decodeURIComponent(previousUrl.pathname.slice(markerIndex + marker.length));
+              } catch (error) {
+                console.warn("Could not identify previous avatar file for cleanup.");
+              }
+            }
+            const { error: uploadError } = await avatarBucket.upload(uploadedAvatarPath, avatarFile, {
               cacheControl: "3600", upsert: true, contentType: avatarFile.type
             });
             if (uploadError) throw uploadError;
-            avatarUrl = supabase.storage.from("developer-avatars").getPublicUrl(objectPath).data.publicUrl;
+            avatarUrl = avatarBucket.getPublicUrl(uploadedAvatarPath).data.publicUrl;
           }
           const { error: saveError } = await supabase.from("developer_profiles").update({
             display_name: displayName, bio, website_url: website || null,
             show_credit: $("developer-show-credit").checked,
             avatar_url: avatarUrl
           }).eq("id", user.id);
-          if (saveError) throw saveError;
+          if (saveError) {
+            if (uploadedAvatarPath && uploadedAvatarPath !== previousAvatarPath) {
+              await avatarBucket.remove([uploadedAvatarPath]);
+            }
+            throw saveError;
+          }
+          if (uploadedAvatarPath && previousAvatarPath && previousAvatarPath !== uploadedAvatarPath) {
+            const { error: deleteError } = await avatarBucket.remove([previousAvatarPath]);
+            if (deleteError) console.warn("Old avatar cleanup failed:", deleteError.message);
+          }
           await supabase.auth.updateUser({ data: { preferred_developer_name: displayName, full_name: displayName } });
           $("account-name").textContent = displayName;
           if (avatarFile) {
