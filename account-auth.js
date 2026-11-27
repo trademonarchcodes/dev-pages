@@ -397,6 +397,39 @@ async function loadBillingStatus(user) {
         }
       });
       actionMenu.append(reconnect);
+      const deleteDomain = document.createElement("button");
+      deleteDomain.type = "button";
+      deleteDomain.textContent = "⌫  Delete Domain";
+      deleteDomain.style.cssText = "width:100%;text-align:left;padding:11px 12px;border:0;border-radius:8px;background:transparent;color:#ff8b94;font:500 14px 'Space Grotesk',sans-serif;cursor:pointer";
+      deleteDomain.addEventListener("mouseenter",()=>deleteDomain.style.background="#3a202b");
+      deleteDomain.addEventListener("mouseleave",()=>deleteDomain.style.background="transparent");
+      deleteDomain.addEventListener("click", async () => {
+        cardActions.open = false;
+        const confirmed = window.confirm(
+          "Delete " + domain.hostname + "?\n\nThis permanently removes the website from DEVPAGES hosting and takes it offline. Other domains will not be affected. Payment history will be kept. This cannot be undone."
+        );
+        if (!confirmed) return;
+        deleteDomain.disabled = true;
+        deleteDomain.textContent = "Deleting…";
+        try {
+          const session = await supabase.auth.getSession();
+          const accessToken = session.data.session?.access_token;
+          const response = await fetch("/api/domains/delete", {
+            method: "POST",
+            headers: { Authorization: "Bearer " + accessToken, "Content-Type": "application/json" },
+            body: JSON.stringify({ domain_id: domain.id })
+          });
+          const result = await response.json();
+          if (!response.ok || !result.success) throw new Error(result.error || "Domain could not be deleted.");
+          showMessage(result.message || "Domain deleted successfully.");
+          await loadBillingStatus(user);
+        } catch (error) {
+          showMessage(error.message || "Could not delete this domain. Please try again.", "error");
+          deleteDomain.disabled = false;
+          deleteDomain.textContent = "⌫  Delete Domain";
+        }
+      });
+      actionMenu.append(deleteDomain);
       cardActions.append(actionToggle,actionMenu);
       card.append(cardActions);
       if (domain.status === "pending_payment" || domain.status === "suspended" || domain.status === "active") {
