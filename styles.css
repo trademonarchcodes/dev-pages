@@ -242,3 +242,22 @@ body:not(.homepage) input,body:not(.homepage) textarea,body:not(.homepage) selec
 body:not(.homepage) footer{font-family:'Outfit','Space Grotesk',sans-serif}
 body:not(.homepage) .legal-card h1,body:not(.homepage) .profile-card h1{font-family:'Outfit','Space Grotesk',sans-serif;font-weight:800}
 @media(prefers-reduced-motion:reduce){body:not(.homepage) *,body:not(.homepage) *:before,body:not(.homepage) *:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+
+/* Payment history — polished transaction cards */
+.payment-history-list{display:grid;gap:12px;margin-top:18px}
+.payment-history-card{position:relative;display:grid;grid-template-columns:48px minmax(0,1fr) auto;align-items:center;gap:15px;padding:18px 20px;border:1px solid rgba(111,169,238,.23);border-radius:16px;background:linear-gradient(115deg,rgba(19,39,65,.94),rgba(9,18,33,.98));box-shadow:0 12px 30px rgba(0,0,0,.16);transition:transform .22s,border-color .22s,box-shadow .22s}
+.payment-history-card:hover{transform:translateY(-3px);border-color:rgba(131,255,226,.6);box-shadow:0 16px 36px rgba(0,0,0,.24),0 0 25px rgba(67,176,255,.1)}
+.payment-history-icon{width:46px;height:46px;display:grid;place-items:center;border-radius:14px;background:linear-gradient(145deg,rgba(131,255,226,.18),rgba(91,157,255,.2));border:1px solid rgba(131,255,226,.3);color:#83ffe2;font-size:23px;font-weight:900;box-shadow:inset 0 1px rgba(255,255,255,.08)}
+.payment-history-main{min-width:0;display:grid;gap:6px}
+.payment-history-main strong{font:800 16px/1.2 'Outfit','Space Grotesk',sans-serif;color:#f4f8ff;text-transform:capitalize}
+.payment-history-main small{font:500 11px/1.5 'Outfit','Space Grotesk',sans-serif;color:#9fb2cc;overflow-wrap:anywhere}
+.payment-history-side{display:grid;justify-items:end;gap:8px}
+.payment-history-amount{font:800 clamp(18px,2.5vw,23px)/1 'Outfit','Space Grotesk',sans-serif;letter-spacing:-.04em;color:#83ffe2;font-variant-numeric:tabular-nums}
+.payment-status-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font:800 10px 'Outfit','Space Grotesk',sans-serif;letter-spacing:.06em;text-transform:uppercase}
+.payment-status-badge:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 9px currentColor}
+.payment-status-badge.is-success{color:#83e8bd;background:rgba(38,153,106,.14);border:1px solid rgba(83,220,164,.25)}
+.payment-status-badge.is-pending{color:#ffd58a;background:rgba(183,130,36,.14);border:1px solid rgba(255,213,138,.25)}
+.payment-status-badge.is-failed{color:#ff9eae;background:rgba(190,65,85,.14);border:1px solid rgba(255,158,174,.22)}
+.payment-verify-button{grid-column:2/-1;justify-self:start;margin-top:2px}
+@media(max-width:520px){.payment-history-card{grid-template-columns:42px minmax(0,1fr);gap:12px;padding:15px}.payment-history-icon{width:40px;height:40px;border-radius:12px}.payment-history-main strong{font-size:15px}.payment-history-side{grid-column:2;display:flex;justify-content:space-between;align-items:center;justify-items:initial;gap:10px}.payment-history-amount{font-size:20px}.payment-verify-button{grid-column:2}}
