@@ -689,7 +689,25 @@ if (domainForm) domainForm.addEventListener("submit", async (event) => {
     const response=await fetch("/api/domains/create",{method:"POST",headers:{Authorization:"Bearer "+sessionData.session.access_token,"Content-Type":"application/json"},body:JSON.stringify({name})});
     const result=await response.json();
     if(!response.ok)throw new Error(result.error||"Could not create domain.");
-    if(result.promo){showMessage("Your promotional domain has been created. Website publishing is the next step.");}
+    if(result.name_changed || (result.domain?.hostname && result.domain.hostname !== name + ".pages.dev")) {
+      const accepted=window.confirm(
+        "Your requested address " + (result.requested_hostname || name + ".pages.dev") +
+        " is not available exactly as entered.\\n\\nDEVPAGES can offer this address instead:\\n" +
+        result.domain.hostname +
+        "\\n\\nNo payment has been taken. Continue with this address?"
+      );
+      if(!accepted) {
+        const removal=await fetch("/api/domains/delete",{method:"POST",headers:{Authorization:"Bearer "+sessionData.session.access_token,"Content-Type":"application/json"},body:JSON.stringify({domain_id:result.domain.id})});
+        const removed=await removal.json();
+        if(!removal.ok) throw new Error("No payment was taken, but DEVPAGES could not cancel the alternate address. You can remove it from your dashboard. " + (removed.error||""));
+        showMessage("No payment was taken. The alternate address was cancelled. You can choose another name.");
+        const {data:currentUser}=await supabase.auth.getUser();
+        await loadBillingStatus(currentUser.user);
+        return;
+      }
+      showMessage("Address confirmed: " + result.domain.hostname + ". Continue with setup.");
+    }
+    if(result.promo){showMessage("Your promotional domain " + result.domain.hostname + " has been created. Website publishing is the next step.");}
     else {
       const payment=await fetch("/api/paystack/initialize",{method:"POST",headers:{Authorization:"Bearer "+sessionData.session.access_token,"Content-Type":"application/json"},body:JSON.stringify({domain_id:result.domain.id,purpose:"setup"})});
       const checkout=await payment.json(); if(!payment.ok||!checkout.authorization_url)throw new Error(checkout.error||"Could not start setup payment.");
