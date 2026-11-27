@@ -258,17 +258,10 @@ async function loadDeveloperProfile(user) {
   if (!form) return;
   const note = $("developer-profile-message");
   try {
-    let { data: profile, error } = await supabase.from("developer_profiles")
+    const { data: profile, error } = await supabase.from("developer_profiles")
       .select("slug,display_name,bio,website_url,show_credit")
       .eq("id", user.id).single();
-    if (error && error.code === "PGRST116") {
-      const fallbackName = user.user_metadata?.preferred_developer_name || user.user_metadata?.full_name || "Developer";
-      const { data: created, error: createError } = await supabase.from("developer_profiles")
-        .insert({ id: user.id, slug: fallbackName.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") + "-" + user.id.replace(/-/g,"").slice(0,6), display_name: fallbackName })
-        .select("slug,display_name,bio,website_url,show_credit").single();
-      if (createError) throw createError;
-      profile = created;
-    } else if (error) throw error;
+    if (error) throw error;
     $("developer-display-name").value = profile.display_name || "";
     $("developer-bio").value = profile.bio || "";
     $("developer-website").value = profile.website_url || "";
