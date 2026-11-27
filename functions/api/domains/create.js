@@ -1,4 +1,4 @@
-import { json, getUser, isPromoUser, PROMO_ACCESS_END, PLATFORM_CF_ACCOUNT_ID } from "../../_lib/billing.js";
+import { json, getUser, isPromoUser, PROMO_ACCESS_END, PLATFORM_CF_ACCOUNT_ID, getCloudflareAccessToken } from "../../_lib/billing.js";
 
 export async function onRequestPost({ request, env }) {
   if (request.headers.get("Origin") !== new URL(request.url).origin) return json({ error: "Request origin rejected." }, 403);
@@ -16,11 +16,14 @@ export async function onRequestPost({ request, env }) {
       return json({ error: "Enter a valid name using 1–50 lowercase letters, numbers or hyphens. You can enter the name alone or include .pages.dev." }, 400);
     }
 
-    // All customer Pages projects are hosted in the DEVPAGES platform account.
-    const accountId = PLATFORM_CF_ACCOUNT_ID;
+    // Existing websites keep their assigned account. New websites use the admin-selected active DevCloud.
+    let selected = null;
+    try { selected = await env.DB.prepare("SELECT account_id FROM devcloud_accounts WHERE status='active' AND is_default=1 LIMIT 1").first(); } catch {}
+    const accountId = selected?.account_id || PLATFORM_CF_ACCOUNT_ID;
+    const {tokens} = await getCloudflareAccessToken(env, user.id, accountId);
     const cf = await fetch("https://api.cloudflare.com/client/v4/accounts/" + encodeURIComponent(accountId) + "/pages/projects", {
       method: "POST",
-      headers: { Authorization: "Bearer " + env.CF_API_TOKEN, "Content-Type": "application/json" },
+      headers: { Authorization: "Bearer " + tokens.access_token, "Content-Type": "application/json" },
       body: JSON.stringify({ name, production_branch: "main", deployment_configs: { production: { compatibility_date: "2026-11-26" } } })
     });
     const result = await cf.json();
@@ -44,7 +47,7 @@ export async function onRequestPost({ request, env }) {
       // Avoid leaving an untracked Pages project behind if the database insert fails.
       await fetch("https://api.cloudflare.com/client/v4/accounts/" + encodeURIComponent(accountId) + "/pages/projects/" + encodeURIComponent(actualName), {
         method: "DELETE",
-        headers: { Authorization: "Bearer " + env.CF_API_TOKEN }
+        headers: { Authorization: "Bearer " + tokens.access_token }
       }).catch(() => {});
       throw databaseError;
     }
