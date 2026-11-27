@@ -30,8 +30,14 @@ form.addEventListener("submit",async event=>{
    const result=await supabase.auth.signUp({email,password,options:{emailRedirectTo:location.origin+"/admin-login.html"}});
    if(result.error)throw result.error;
    if(result.data.session){const check=await fetch("/api/admin/overview",{headers:{Authorization:"Bearer "+result.data.session.access_token},cache:"no-store"});if(!check.ok)throw new Error("Account created, but administrator access is not yet confirmed. Verify the approved email address.");location.replace("/admin.html");return;}
+   mode="login";
+   $("auth-title").innerHTML="Welcome back<span>.</span>";
+   $("auth-description").textContent="Sign in to manage DEVPAGES operations and hosting infrastructure.";
+   $("auth-submit").innerHTML="Sign in securely <span>→</span>";
+   $("switch-copy").textContent="New administrator?";
+   $("switch-mode").textContent="Create admin account";
+   form.elements.password.autocomplete="current-password";
    show("Registration received. Check the approved email inbox to confirm the account, then sign in here.");
-   mode="login";$("switch-mode").click();
    return;
   }
   const result=await supabase.auth.signInWithPassword({email,password});
