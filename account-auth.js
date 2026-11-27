@@ -290,7 +290,7 @@ if ($("account-name")) {
     $("account-email").textContent = user.email || "Email unavailable";
     $("account-status").textContent = user.email_confirmed_at ? "Email verified" : "Email confirmation pending";
     await loadDeveloperProfile(data.user);
-    await loadBillingStatus(data.user);
+    await Promise.all([loadBillingStatus(data.user), loadPaymentHistory(data.user)]);
   }
 }
 
@@ -454,11 +454,6 @@ async function loadBillingStatus(user) {
   const summary = $("billing-summary");
   const list = $("domain-list");
   const paymentsSection = $("payments-section");
-  const history = $("payment-history");
-  const billingEmpty = $("billing-empty-state");
-  if (paymentsSection) paymentsSection.hidden = false;
-  if (billingEmpty) billingEmpty.hidden = true;
-  if (history && !history.dataset.loaded) history.textContent = "Loading payment history…";
   if (!summary || !list) return;
   try {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -498,9 +493,7 @@ async function loadBillingStatus(user) {
     if (dashNote) dashNote.hidden = !hostingReady;
     if (authMessage) authMessage.hidden = !hostingReady;
     const websitesEmpty = $("websites-empty-state");
-    const billingEmpty = $("billing-empty-state");
     if (websitesEmpty) websitesEmpty.hidden = hostingReady;
-    if (billingEmpty) billingEmpty.hidden = true;
     for (const sectionId of ["projects-card","domains-section"]) {
       const section = $(sectionId);
       if (section) section.hidden = !payload.account.hosting_connected;
@@ -795,74 +788,173 @@ async function loadBillingStatus(user) {
       const selectedLabel = selectedCloud === "all" ? "All DevClouds" : (payload.hosting_accounts || []).find(a => a.account_id === selectedCloud)?.label || "selected DevCloud";
       applyCloudFilter(selectedCloud, selectedLabel);
     }
-    if (history) {
-      history.dataset.loaded = "1";
-      history.replaceChildren();
-      if (!payload.payment_history?.length) {
-        const empty = document.createElement("p"); empty.textContent = "No payments recorded yet."; history.append(empty);
-      } else {
-        history.classList.add("payment-history-list");
-        for (const payment of payload.payment_history) {
-          const row = document.createElement("article");
-          row.className = "payment-history-card";
-          const icon = document.createElement("span");
-          icon.className = "payment-history-icon";
-          icon.textContent = payment.status === "success" ? "✓" : payment.status === "pending" ? "◷" : "↗";
-          icon.setAttribute("aria-hidden", "true");
-          const main = document.createElement("div");
-          main.className = "payment-history-main";
-          const title = document.createElement("strong");
-          title.textContent = (payment.purpose || "Hosting payment").replace(/[_-]+/g," ");
-          const meta = document.createElement("small");
-          const date = new Date(payment.created_at);
-          meta.textContent = (Number.isNaN(date.getTime()) ? "Date unavailable" : date.toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"})) + (payment.reference ? " · Ref " + payment.reference : "");
-          main.append(title,meta);
-          const side = document.createElement("div");
-          side.className = "payment-history-side";
-          const amount = document.createElement("strong");
-          amount.className = "payment-history-amount";
-          amount.textContent = money(payment.amount_kobo / 100);
-          const status = document.createElement("span");
-          status.className = "payment-status-badge " + (payment.status === "success" ? "is-success" : payment.status === "pending" ? "is-pending" : "is-failed");
-          status.textContent = payment.status || "unknown";
-          side.append(amount,status);
-          row.append(icon,main,side);
-          if (payment.status === "pending") {
-            const verify = document.createElement("button");
-            verify.type = "button"; verify.className = "auth-submit payment-verify-button"; verify.textContent = "Verify payment";
-            verify.addEventListener("click", async () => {
-              verify.disabled = true; verify.textContent = "Verifying…";
-              try {
-                const res = await fetch("/api/paystack/verify", {method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({reference:payment.reference})});
-                const checked = await res.json();
-                if (!res.ok || !checked.success) throw new Error(checked.error || "Payment is not confirmed yet.");
-                showMessage("Payment confirmed. Your hosting record has been updated.");
-                await loadBillingStatus(user);
-              } catch(error) { showMessage(error.message || "Could not verify payment.","error"); verify.disabled=false; verify.textContent="Verify payment"; }
-            });
-            row.append(verify);
-          }
-          history.append(row);
-        }
-      }
-    }
   } catch (error) {
     if (summary) summary.textContent = error.message || "Could not load billing details.";
-    if (paymentsSection) paymentsSection.hidden = false;
-    if (history) {
-      history.replaceChildren();
-      const message = document.createElement("p");
-      message.textContent = "We couldn't load your payment records right now. Your payment history has not been deleted. Please try again.";
-      message.style.cssText = "color:#aebfd5;font-size:13px;line-height:1.7;margin:0";
-      const retry = document.createElement("button");
-      retry.type = "button";
-      retry.className = "auth-submit";
-      retry.textContent = "↻  Reload payment history";
-      retry.addEventListener("click", () => loadBillingStatus(user));
-      history.append(message,retry);
-    }
   }
 }
+
+async function loadPaymentHistory(user) {
+  const history = $("payment-history");
+  if (!history) return;
+  const totalPaid = $("billing-total-paid");
+  const successfulCount = $("billing-success-count");
+  const pendingCount = $("billing-pending-count");
+  const renderState = (title, description, retry = true) => {
+    history.replaceChildren();
+    const state = document.createElement("div");
+    state.className = "billing-state billing-state-error";
+    const heading = document.createElement("strong");
+    heading.textContent = title;
+    const detail = document.createElement("p");
+    detail.textContent = description;
+    state.append(heading, detail);
+    if (retry) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "billing-refresh-button";
+      button.textContent = "↻ Try again";
+      button.addEventListener("click", () => loadPaymentHistory(user));
+      state.append(button);
+    }
+    history.append(state);
+  };
+
+  history.replaceChildren();
+  const loading = document.createElement("div");
+  loading.className = "billing-state";
+  const spinner = document.createElement("span");
+  spinner.className = "billing-loader";
+  const heading = document.createElement("strong");
+  heading.textContent = "Loading your transactions";
+  const detail = document.createElement("p");
+  detail.textContent = "Retrieving your payment history securely.";
+  loading.append(spinner, heading, detail);
+  history.append(loading);
+
+  if (totalPaid) totalPaid.textContent = "—";
+  if (successfulCount) successfulCount.textContent = "—";
+  if (pendingCount) pendingCount.textContent = "—";
+
+  try {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw sessionError;
+    const token = sessionData.session?.access_token;
+    if (!token) throw new Error("Your session has expired. Please sign in again.");
+    const response = await fetch("/api/billing/payments", {
+      headers: { Authorization: "Bearer " + token },
+      cache: "no-store"
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "Payment history is unavailable.");
+    const payments = Array.isArray(payload.payments) ? payload.payments : [];
+    const summary = payload.summary || {};
+    const money = value => "₦" + (Number(value || 0) / 100).toLocaleString("en-NG", {maximumFractionDigits:0});
+    if (totalPaid) totalPaid.textContent = money(summary.total_paid_kobo);
+    if (successfulCount) successfulCount.textContent = String(summary.successful_count ?? 0);
+    if (pendingCount) pendingCount.textContent = String(summary.pending_count ?? 0);
+    history.replaceChildren();
+
+    if (!payments.length) {
+      const empty = document.createElement("div");
+      empty.className = "billing-state";
+      const icon = document.createElement("span");
+      icon.className = "billing-empty-icon";
+      icon.textContent = "↗";
+      const title = document.createElement("strong");
+      title.textContent = "No payments yet";
+      const copy = document.createElement("p");
+      copy.textContent = "When you make a DEVPAGES hosting payment, your transaction will appear here.";
+      empty.append(icon, title, copy);
+      history.append(empty);
+      return;
+    }
+
+    for (const payment of payments) {
+      const row = document.createElement("article");
+      row.className = "payment-history-card";
+      const icon = document.createElement("span");
+      icon.className = "payment-history-icon " + (payment.status === "success" ? "is-success" : payment.status === "pending" ? "is-pending" : "is-failed");
+      icon.textContent = payment.status === "success" ? "✓" : payment.status === "pending" ? "◷" : "↗";
+      icon.setAttribute("aria-hidden", "true");
+
+      const main = document.createElement("div");
+      main.className = "payment-history-main";
+      const title = document.createElement("strong");
+      title.textContent = payment.purpose === "setup" ? "Website setup" : payment.purpose === "renewal" ? "Hosting renewal" : (payment.purpose || "Hosting payment").replace(/[_-]+/g, " ");
+      const meta = document.createElement("small");
+      const date = new Date(payment.paid_at || payment.created_at);
+      meta.textContent = (Number.isNaN(date.getTime()) ? "Date unavailable" : date.toLocaleString("en-NG", {day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}));
+      main.append(title, meta);
+      if (payment.reference) {
+        const reference = document.createElement("button");
+        reference.type = "button";
+        reference.className = "payment-reference-copy";
+        reference.textContent = "Ref: " + payment.reference + "  ·  Copy";
+        reference.addEventListener("click", async () => {
+          try {
+            await navigator.clipboard.writeText(payment.reference);
+            reference.textContent = "✓ Reference copied";
+          } catch {
+            reference.textContent = "Reference: " + payment.reference;
+          }
+        });
+        main.append(reference);
+      }
+
+      const side = document.createElement("div");
+      side.className = "payment-history-side";
+      const amount = document.createElement("strong");
+      amount.className = "payment-history-amount";
+      amount.textContent = money(payment.amount_kobo);
+      const status = document.createElement("span");
+      status.className = "payment-status-badge " + (payment.status === "success" ? "is-success" : payment.status === "pending" ? "is-pending" : "is-failed");
+      status.textContent = payment.status === "success" ? "Successful" : payment.status === "pending" ? "Pending" : (payment.status || "Unknown");
+      side.append(amount, status);
+      row.append(icon, main, side);
+
+      if (payment.status === "pending" && payment.reference) {
+        const verify = document.createElement("button");
+        verify.type = "button";
+        verify.className = "payment-verify-button";
+        verify.textContent = "Verify payment";
+        verify.addEventListener("click", async () => {
+          verify.disabled = true;
+          verify.textContent = "Verifying…";
+          try {
+            const result = await fetch("/api/paystack/verify", {
+              method: "POST",
+              headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+              body: JSON.stringify({reference: payment.reference})
+            });
+            const checked = await result.json();
+            if (!result.ok || !checked.success) throw new Error(checked.error || "Payment is not confirmed yet.");
+            showMessage("Payment confirmed. Your hosting record has been updated.");
+            await Promise.all([loadPaymentHistory(user), loadBillingStatus(user)]);
+          } catch (error) {
+            showMessage(error.message || "Could not verify payment.", "error");
+            verify.disabled = false;
+            verify.textContent = "Verify payment";
+          }
+        });
+        row.append(verify);
+      }
+      history.append(row);
+    }
+  } catch (error) {
+    renderState("Payment history couldn't load", error.message || "Check your connection and try again.");
+  }
+}
+
+$("refresh-payment-history")?.addEventListener("click", async event => {
+  const button = event.currentTarget;
+  button.disabled = true;
+  button.textContent = "↻ Refreshing…";
+  const { data } = await supabase.auth.getUser();
+  if (data.user) await loadPaymentHistory(data.user);
+  button.disabled = false;
+  button.textContent = "↻ Refresh";
+});
+
 const domainForm = $("domain-create-form");
 const domainNameInput = $("new-domain-name");
 const suggestionPanel = $("domain-suggestions");
