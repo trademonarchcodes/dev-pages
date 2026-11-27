@@ -1,83 +1,41 @@
 import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.102.0/+esm";
 const supabase=createClient("https://xkkczzhjffocfywjlukr.supabase.co","sb_publishable_rOIFM2e5DRVSIN-dhFfqkQ_YOIqlGZN",{auth:{persistSession:true,autoRefreshToken:true}});
-const $=id=>document.getElementById(id);
-const esc=v=>String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");
-const money=k=>"₦"+(Number(k||0)/100).toLocaleString("en-NG");
-const {data,error}=await supabase.auth.getUser();
-if(error||!data.user){location.replace("/login.html");}
-else{
- const session=(await supabase.auth.getSession()).data.session;
- const headers={Authorization:"Bearer "+session.access_token};
- async function load(){
-  const res=await fetch("/api/admin/overview",{headers,cache:"no-store"});
-  const d=await res.json();
-  if(!res.ok)throw new Error(d.error||"Admin access denied.");
-  $("admin-email").textContent="Signed in as "+d.admin.email;
-  $("stat-customers").textContent=d.stats.customers;
-  $("stat-websites").textContent=d.stats.websites;
-  $("stat-payments").textContent=d.stats.successful_payments;
-  $("stat-revenue").textContent=money(d.stats.revenue_kobo);
-
-  $("devcloud-list").innerHTML=(d.devcloud||[]).map(a=>{
-   const connected=a.status==="active";
-   const state=connected?"Connected":a.status==="disabled"?"Disconnected":"Not connected";
- 
-   return "<article class='devcloud-card'>"+
-    "<div class='devcloud-main'><p class='devcloud-name'>"+esc(a.label)+"</p>"+
-    "<div class='devcloud-id'>Account ID: "+esc(a.account_id)+"</div>"+
-    "<div class='devcloud-meta'><span class='devcloud-state "+(connected?"connected":"")+"'>"+state+"</span>"+
-    (a.is_default?"<span class='devcloud-default'>Default priority for new websites</span>":"")+
-    (a.source==="environment"?"<span class='admin-muted'>Platform account</span>":"")+
-    "</div></div><div class='devcloud-admin-controls'>"+
-    (!connected?"<button class='admin-action' type='button' data-action='activate' data-id='"+esc(a.id)+"'>Connect account</button>":"<button class='admin-action' type='button' data-action='deactivate' data-id='"+esc(a.id)+"'>Disable account</button>")+
-    "<button class='admin-action' type='button' data-action='reconnect' data-id='"+esc(a.id)+"'>Update credentials</button>"+
-    "</div></article>";
-  }).join("")||"<p class='admin-muted'>No DevCloud accounts have been added.</p>";
-
-  $("websites-table").innerHTML="<table class='admin-table'><thead><tr><th>Website</th><th>Customer ID</th><th>DevCloud account</th><th>Status</th><th>Expires</th></tr></thead><tbody>"+(d.websites||[]).map(w=>"<tr><td>"+esc(w.hostname)+"</td><td>"+esc(w.user_id)+"</td><td>"+esc(w.cloudflare_account_id||"—")+"</td><td>"+esc(w.status)+"</td><td>"+esc(w.expires_at||"—")+"</td></tr>").join("")+"</tbody></table>";
-  $("payments-table").innerHTML="<table class='admin-table'><thead><tr><th>Reference</th><th>Customer ID</th><th>Website</th><th>Purpose</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead><tbody>"+(d.payments||[]).map(p=>"<tr><td>"+esc(p.reference)+"</td><td>"+esc(p.user_id)+"</td><td>"+esc(p.hostname||"—")+"</td><td>"+esc(p.purpose)+"</td><td>"+money(p.amount_kobo)+"</td><td>"+esc(p.status)+"</td><td>"+new Date(p.created_at).toLocaleString()+"</td></tr>").join("")+"</tbody></table>";
-  $("settlements-table").innerHTML="<table class='admin-table'><thead><tr><th>Settlement ID</th><th>Status</th><th>Amount</th><th>Settlement date</th></tr></thead><tbody>"+(d.settlements||[]).map(s=>"<tr><td>"+esc(s.id)+"</td><td>"+esc(s.status)+"</td><td>"+money(s.total_amount)+"</td><td>"+esc(s.settlement_date||"—")+"</td></tr>").join("")+"</tbody></table>";
-  $("activity-table").innerHTML="<table class='admin-table'><thead><tr><th>Admin</th><th>Action</th><th>Details</th><th>Date</th></tr></thead><tbody>"+(d.activity||[]).map(a=>"<tr><td>"+esc(a.admin_email)+"</td><td>"+esc(a.action)+"</td><td>"+esc(a.details_json)+"</td><td>"+new Date(a.created_at).toLocaleString()+"</td></tr>").join("")+"</tbody></table>";
- }
- try{await load();}catch(e){$("admin-error").textContent=e.message;}
- $("admin-refresh").addEventListener("click",()=>load().catch(e=>$("admin-error").textContent=e.message));
-
- $("devcloud-list").addEventListener("click",async e=>{
-  const b=e.target.closest("[data-action]");
-  if(!b)return;
-  let extra={};
-  if(b.dataset.action==="reconnect"){
-   const token=prompt("Enter the replacement hosting credential. It will be encrypted and never displayed again.");
-   if(!token)return;
-   extra.token=token;
-  }
-  b.disabled=true;
-  $("admin-error").textContent="";
-  try{
-   const r=await fetch("/api/admin/devcloud",{method:"POST",headers:{...headers,"Content-Type":"application/json"},body:JSON.stringify({action:b.dataset.action,id:b.dataset.id,...extra})});
-   const x=await r.json();
-   if(!r.ok)throw new Error(x.error||"Hosting account update failed.");
-   await load();
-  }catch(err){$("admin-error").textContent=err.message;}
-  finally{b.disabled=false;}
- });
-
- $("devcloud-form").addEventListener("submit",async e=>{
-  e.preventDefault();
-  const f=e.currentTarget;
-  const accountId=f.elements.namedItem("account_id");
-  const tokenField=f.elements.namedItem("token");
-  const b=f.querySelector("button");
-  b.disabled=true;b.textContent="Verifying…";
-  $("admin-error").textContent="";
-  try{
-   const r=await fetch("/api/admin/devcloud",{method:"POST",headers:{...headers,"Content-Type":"application/json"},body:JSON.stringify({action:"add",account_id:accountId.value.trim(),token:tokenField.value.trim()})});
-   const x=await r.json();
-   if(!r.ok)throw new Error(x.error||"Could not add this DevCloud account.");
-   f.reset();
-   $("admin-error").textContent=x.label+" added as not connected. Open its ⋮ menu and choose Connect Hosting when ready.";
-   await load();
-  }catch(err){$("admin-error").textContent=err.message;}
-  finally{b.disabled=false;b.textContent="Add DevCloud Account →";}
- });
+const $=id=>document.getElementById(id),esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const money=k=>"₦"+(Number(k||0)/100).toLocaleString("en-NG",{maximumFractionDigits:0});
+const date=v=>{if(!v)return "—";const d=new Date(v);return isNaN(d)?"—":d.toLocaleString("en-NG",{dateStyle:"medium",timeStyle:"short"});};
+const badge=s=>'<span class="admin-status '+esc(String(s||"").toLowerCase())+'">'+esc(s||"unknown")+"</span>";
+const countdown=v=>{if(!v)return "No expiry recorded";const n=new Date(v).getTime()-Date.now();if(!Number.isFinite(n))return "Expiry unavailable";if(n<=0)return "Expired · awaiting status update";return Math.floor(n/86400000)+"d "+Math.floor(n%86400000/3600000)+"h "+Math.floor(n%3600000/60000)+"m remaining";};
+let session,data;
+const setError=(s,ok=false)=>{$("admin-error").textContent=s||"";$("admin-error").style.color=ok?"#8ff0c1":"#ffabb6";};
+function cloudCard(a){const pc=Math.min(100,Number(a.capacity_percent||0));return '<article class="admin-devcloud-card"><div class="admin-devcloud-head"><div><strong>'+esc(a.label)+'</strong><small>Account · '+esc(a.account_id)+'</small></div>'+badge(a.status)+'</div><div class="admin-slots"><strong>'+Number(a.slots_left||0)+'</strong><span>slots left of '+Number(a.slot_limit||100)+'</span></div><div class="admin-capacity-track"><div class="admin-capacity-fill" style="width:'+pc+'%"></div></div><div class="admin-devcloud-foot"><span>'+Number(a.slots_used||0)+' used · '+pc+'%</span><span>'+(a.is_default?"Default allocator":"Standby")+'</span></div><div class="admin-devcloud-controls">'+(a.status==="active"?'<button class="admin-action" data-action="deactivate" data-id="'+esc(a.id)+'">Disable</button>':'<button class="admin-action" data-action="activate" data-id="'+esc(a.id)+'">Set active & default</button>')+(a.source!=="environment"?'<button class="admin-action" data-action="reconnect" data-id="'+esc(a.id)+'">Update credential</button>':'')+'</div></article>';}
+function render(){
+ const s=data.stats||{},accounts=data.devcloud||[],sites=data.websites||[],payments=data.payments||[];
+ $("admin-email").textContent=data.admin.email;$("sidebar-admin-email").textContent=data.admin.email;
+ for(const [id,val] of Object.entries({"stat-customers":s.customers??0,"stat-websites":s.websites??0,"stat-payments":s.successful_payments??0,"stat-revenue":money(s.revenue_kobo),"stat-active":s.active_websites??0,"stat-expiring":s.expiring_soon??0,"stat-suspended":s.suspended_websites??0,"stat-pending":s.pending_payments??0}))$(id).textContent=val;
+ $("devcloud-list").innerHTML=accounts.map(cloudCard).join("")||'<div class="admin-empty">No DevCloud accounts registered.</div>';
+ $("overview-devcloud").innerHTML=accounts.map(cloudCard).join("")||'<div class="admin-empty">No DevCloud accounts available.</div>';
+ $("website-count").textContent=sites.length+" records";
+ $("websites-table").innerHTML='<table class="admin-table"><thead><tr><th>Website</th><th>Customer ID</th><th>DevCloud</th><th>Status</th><th>Countdown</th><th>Created</th></tr></thead><tbody>'+sites.map(w=>{const a=accounts.find(x=>x.account_id===w.cloudflare_account_id);return '<tr><td><strong>'+esc(w.hostname||w.project_name||"Website")+'</strong><br><span class="admin-muted">'+esc(w.project_name||"")+'</span></td><td>'+esc(w.user_id)+'</td><td>'+esc(a?.label||w.cloudflare_account_id||"Unassigned")+'</td><td>'+badge(w.status)+'</td><td><span class="admin-countdown '+(countdown(w.expires_at).startsWith("Expired")?"expired":"")+'" data-expiry="'+esc(w.expires_at||"")+'">'+esc(countdown(w.expires_at))+'</span></td><td>'+esc(date(w.created_at))+'</td></tr>';}).join("")+'</tbody></table>';
+ const attention=sites.filter(w=>w.status==="suspended"||(w.status==="active"&&w.expires_at&&new Date(w.expires_at)-Date.now()<=604800000)).slice(0,8);
+ $("overview-expiring").innerHTML=attention.map(w=>'<article class="admin-domain-card"><div><strong>'+esc(w.hostname||w.project_name||"Website")+'</strong><small>'+esc(w.status)+' · '+esc(w.user_id)+'</small></div><div class="admin-domain-side">'+badge(w.status)+'<div class="admin-countdown '+(countdown(w.expires_at).startsWith("Expired")?"expired":"")+'" data-expiry="'+esc(w.expires_at||"")+'">'+esc(countdown(w.expires_at))+'</div></div></article>').join("")||'<div class="admin-empty">No domains currently need attention.</div>';
+ $("payment-count").textContent=payments.length+" recent records";
+ $("payments-table").innerHTML=payments.length?'<table class="admin-table"><thead><tr><th>Reference</th><th>Customer</th><th>Website</th><th>Purpose</th><th>Amount</th><th>Status</th><th>Created</th><th>Paid</th></tr></thead><tbody>'+payments.map(p=>'<tr><td><strong>'+esc(p.reference)+'</strong></td><td>'+esc(p.user_id)+'</td><td>'+esc(p.hostname||p.domain_id||"—")+'</td><td>'+esc(p.purpose)+'</td><td>'+money(p.amount_kobo)+'</td><td>'+badge(p.status)+'</td><td>'+esc(date(p.created_at))+'</td><td>'+esc(date(p.paid_at))+'</td></tr>').join("")+'</tbody></table>':'<div class="admin-empty">No payment records yet.</div>';
+ const st=data.settlements||[];$("settlements-table").innerHTML=st.length?'<table class="admin-table"><thead><tr><th>Settlement ID</th><th>Status</th><th>Amount</th><th>Settlement date</th><th>Currency</th></tr></thead><tbody>'+st.map(x=>'<tr><td>'+esc(x.id)+'</td><td>'+badge(x.status)+'</td><td>'+money(x.total_amount)+'</td><td>'+esc(date(x.settlement_date))+'</td><td>'+esc(x.currency||"NGN")+'</td></tr>').join("")+'</tbody></table>':'<div class="admin-empty">No settlement records returned. Check Paystack API settlement permissions if you expect records here.</div>';
+ const logs=data.activity||[];$("activity-table").innerHTML=logs.length?'<table class="admin-table"><thead><tr><th>Admin</th><th>Action</th><th>Details</th><th>Date</th></tr></thead><tbody>'+logs.map(x=>'<tr><td>'+esc(x.admin_email)+'</td><td>'+esc(x.action)+'</td><td>'+esc(x.details_json)+'</td><td>'+esc(date(x.created_at))+'</td></tr>').join("")+'</tbody></table>':'<div class="admin-empty">No admin actions recorded yet.</div>';
+ tick();
 }
+function tick(){document.querySelectorAll("[data-expiry]").forEach(el=>{el.textContent=countdown(el.dataset.expiry);el.classList.toggle("expired",el.textContent.startsWith("Expired"));});}
+async function load(){setError("");const r=await fetch("/api/admin/overview",{headers:{Authorization:"Bearer "+session.access_token},cache:"no-store"}),d=await r.json();if(!r.ok){if(r.status===401||r.status===403){await supabase.auth.signOut();location.replace("/admin-login.html");return;}throw new Error(d.error||"Could not load admin data.");}data=d;render();}
+function openView(n){document.querySelectorAll("[data-admin-view]").forEach(x=>x.classList.toggle("active",x.dataset.adminView===n));document.querySelectorAll("[data-view]").forEach(x=>x.classList.toggle("active",x.dataset.view===n));$("topbar-title").textContent=document.querySelector('[data-view="'+n+'"]')?.textContent.trim()||"Overview";$("admin-shell").classList.remove("nav-open");}
+document.querySelectorAll("[data-view]").forEach(b=>b.addEventListener("click",()=>openView(b.dataset.view)));
+document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>openView(b.dataset.go)));
+$("admin-menu-toggle").addEventListener("click",()=>$("admin-shell").classList.toggle("nav-open"));$("admin-overlay").addEventListener("click",()=>$("admin-shell").classList.remove("nav-open"));
+$("admin-refresh").addEventListener("click",async()=>{const b=$("admin-refresh");b.disabled=true;b.textContent="Refreshing…";try{await load();}catch(e){setError(e.message);}finally{b.disabled=false;b.textContent="↻ Refresh";}});
+$("admin-signout").addEventListener("click",async()=>{await supabase.auth.signOut();location.replace("/admin-login.html");});
+async function cloudAction(e){const b=e.target.closest("[data-action]");if(!b)return;const action=b.dataset.action;let token;if(action==="reconnect"){token=prompt("Enter replacement hosting credential. It will be encrypted and never displayed again.");if(!token)return;}if(action==="deactivate"&&!confirm("Disable this DevCloud for new website assignments? Existing websites remain assigned."))return;b.disabled=true;try{const r=await fetch("/api/admin/devcloud",{method:"POST",headers:{Authorization:"Bearer "+session.access_token,"Content-Type":"application/json"},body:JSON.stringify({action,id:b.dataset.id,...(token?{token}:{})})}),d=await r.json();if(!r.ok)throw new Error(d.error||"DevCloud update failed.");await load();setError("DevCloud updated successfully.",false);}catch(e){setError(e.message);}finally{b.disabled=false;}}
+$("devcloud-list").addEventListener("click",cloudAction);$("overview-devcloud").addEventListener("click",cloudAction);
+$("devcloud-form").addEventListener("submit",async e=>{e.preventDefault();const f=e.currentTarget,b=f.querySelector("button");b.disabled=true;b.textContent="Verifying…";$("devcloud-message").textContent="";try{const r=await fetch("/api/admin/devcloud",{method:"POST",headers:{Authorization:"Bearer "+session.access_token,"Content-Type":"application/json"},body:JSON.stringify({action:"add",account_id:f.elements.account_id.value.trim(),token:f.elements.token.value.trim()})}),d=await r.json();if(!r.ok)throw new Error(d.error||"Could not add DevCloud.");f.reset();$("devcloud-message").textContent=d.label+" added. Activate it when ready.";await load();}catch(e){$("devcloud-message").textContent=e.message;}finally{b.disabled=false;b.textContent="＋ Add DevCloud";}});
+const auth=await supabase.auth.getSession();session=auth.data.session;
+if(!session){location.replace("/admin-login.html");}
+else if(!session.user.email_confirmed_at||session.user.email?.toLowerCase()!=="devlyonofficial@gmail.com"){await supabase.auth.signOut();location.replace("/admin-login.html");}
+else{try{await load();setInterval(tick,60000);}catch(e){setError(e.message);}}
