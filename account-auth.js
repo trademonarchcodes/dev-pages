@@ -269,10 +269,14 @@ async function loadBillingStatus(user) {
     const overviewGrid = $("account-overview-grid");
     const welcome = document.querySelector(".dash-welcome");
     const header = document.querySelector(".dash-header");
+    const dashNote = document.querySelector(".dash-note");
+    const authMessage = $("auth-message");
     if (setupScreen) setupScreen.hidden = hostingReady;
     if (overviewGrid) overviewGrid.hidden = !hostingReady;
     if (welcome) welcome.hidden = !hostingReady;
     if (header) header.hidden = !hostingReady;
+    if (dashNote) dashNote.hidden = !hostingReady;
+    if (authMessage) authMessage.hidden = !hostingReady;
     for (const sectionId of ["projects-card","domains-section","payments-section"]) {
       const section = $(sectionId);
       if (section) section.hidden = !payload.account.hosting_connected;
