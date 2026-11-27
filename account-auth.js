@@ -266,12 +266,27 @@ async function loadBillingStatus(user) {
     const connectButton = $("cloudflare-connect-button");
     const hostingReady = Boolean(payload.account?.hosting_connected);
     const setupScreen = $("hosting-setup-screen");
+    const retryHosting = $("retry-hosting-check");
+    const connectionStatus = $("hosting-connection-status");
     const overviewGrid = $("account-overview-grid");
     const welcome = document.querySelector(".dash-welcome");
     const header = document.querySelector(".dash-header");
     const dashNote = document.querySelector(".dash-note");
     const authMessage = $("auth-message");
     if (setupScreen) setupScreen.hidden = hostingReady;
+    if (connectionStatus) connectionStatus.textContent = hostingReady ? "DEVPAGES managed hosting is connected" : "DEVPAGES is still preparing the hosting connection";
+    if (retryHosting && !retryHosting.dataset.bound) {
+      retryHosting.dataset.bound = "1";
+      retryHosting.addEventListener("click", async () => {
+        retryHosting.disabled = true;
+        retryHosting.textContent = "Checking…";
+        await loadBillingStatus(user);
+        if (retryHosting.isConnected) {
+          retryHosting.disabled = false;
+          retryHosting.textContent = "Check connection again ↻";
+        }
+      });
+    }
     if (overviewGrid) overviewGrid.hidden = !hostingReady;
     if (welcome) welcome.hidden = !hostingReady;
     if (header) header.hidden = !hostingReady;
