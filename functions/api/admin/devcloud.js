@@ -31,6 +31,18 @@ export async function onRequestPost({request,env}) {
       await logAdmin(env,admin,"devcloud_added",{label,account_id:accountId,account_name:account.name});
       return json({success:true,label,account_name:account.name,status:"inactive"});
     }
+    if(action==="reconnect") {
+      const id=String(body.id||"");
+      const token=String(body.token||"").trim();
+      if(!token||token.length>4096)return json({error:"Enter the new hosting credential."},400);
+      const row=await env.DB.prepare("SELECT id,label,account_id FROM devcloud_accounts WHERE id=?").bind(id).first();
+      if(!row)return json({error:"DevCloud account not found."},404);
+      await verifyToken(token,row.account_id);
+      const encrypted=await encryptConnection({access_token:token},env.CF_TOKEN_ENCRYPTION_KEY);
+      await env.DB.prepare("UPDATE devcloud_accounts SET token_ciphertext=?,token_iv=?,source='encrypted',updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(encrypted.ciphertext,encrypted.iv,id).run();
+      await logAdmin(env,admin,"devcloud_reconnected",{label:row.label,account_id:row.account_id});
+      return json({success:true,label:row.label});
+    }
     if(action==="activate"||action==="deactivate") {
       const id=String(body.id||"");
       const row=await env.DB.prepare("SELECT id,label,account_id FROM devcloud_accounts WHERE id=?").bind(id).first();
