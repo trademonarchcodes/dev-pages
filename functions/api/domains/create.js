@@ -1,8 +1,8 @@
-import { json, getUser, isPromoUser, PROMO_ACCESS_END, getCloudflareAccessToken } from "../../_lib/billing.js";
+import { json, getUser, isPromoUser, PROMO_ACCESS_END, PLATFORM_CF_ACCOUNT_ID } from "../../_lib/billing.js";
 
 export async function onRequestPost({ request, env }) {
   if (request.headers.get("Origin") !== new URL(request.url).origin) return json({ error: "Request origin rejected." }, 403);
-  if (!env.DB || !env.CF_TOKEN_ENCRYPTION_KEY) return json({ error: "Hosting connection is not configured." }, 503);
+  if (!env.DB || !env.CF_API_TOKEN) return json({ error: "DEVPAGES hosting is not configured. Please contact support." }, 503);
 
   try {
     const user = await getUser(request, env);
@@ -16,17 +16,11 @@ export async function onRequestPost({ request, env }) {
       return json({ error: "Enter a valid name using 1–50 lowercase letters, numbers or hyphens. You can enter the name alone or include .pages.dev." }, 400);
     }
 
-    const connection = await env.DB.prepare("SELECT accounts_json FROM cloudflare_connections WHERE user_id=?").bind(user.id).first();
-    if (!connection) return json({ error: "Connect your Cloudflare account before adding a domain." }, 409);
-    const accounts = JSON.parse(connection.accounts_json || "[]");
-    if (!accounts.length || !accounts[0]?.id) return json({ error: "No Cloudflare account is connected." }, 409);
-
-    // Create the real Cloudflare Pages project before checkout so a taken name is rejected before payment.
-    const { tokens } = await getCloudflareAccessToken(env, user.id);
-    const accountId = accounts[0].id;
+    // All customer Pages projects are hosted in the DEVPAGES platform account.
+    const accountId = PLATFORM_CF_ACCOUNT_ID;
     const cf = await fetch("https://api.cloudflare.com/client/v4/accounts/" + encodeURIComponent(accountId) + "/pages/projects", {
       method: "POST",
-      headers: { Authorization: "Bearer " + tokens.access_token, "Content-Type": "application/json" },
+      headers: { Authorization: "Bearer " + env.CF_API_TOKEN, "Content-Type": "application/json" },
       body: JSON.stringify({ name, production_branch: "main", deployment_configs: { production: { compatibility_date: "2026-11-26" } } })
     });
     const result = await cf.json();
