@@ -264,6 +264,15 @@ async function loadBillingStatus(user) {
     const money = (value) => "₦" + Number(value).toLocaleString("en-NG");
     const domainForm = $("domain-create-form");
     const connectButton = $("cloudflare-connect-button");
+    const hostingReady = Boolean(payload.account?.hosting_connected);
+    const setupScreen = $("hosting-setup-screen");
+    const overviewGrid = $("account-overview-grid");
+    const welcome = document.querySelector(".dash-welcome");
+    const header = document.querySelector(".dash-header");
+    if (setupScreen) setupScreen.hidden = hostingReady;
+    if (overviewGrid) overviewGrid.hidden = !hostingReady;
+    if (welcome) welcome.hidden = !hostingReady;
+    if (header) header.hidden = !hostingReady;
     for (const sectionId of ["projects-card","domains-section","payments-section"]) {
       const section = $(sectionId);
       if (section) section.hidden = !payload.account.hosting_connected;
