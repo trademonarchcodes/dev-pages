@@ -1,6 +1,7 @@
 import { json } from "../../_lib/billing.js";
 
-export async function onRequestGet({env}) {
-  const email=String(env.DEVPAGES_ADMIN_EMAIL||"devlyonofficial@gmail.com").trim().toLowerCase();
-  return json({admin_email:email,registration_restricted:true});
+export async function onRequestGet() {
+  return new Response(JSON.stringify({admin_email:"devlyonofficial@gmail.com",registration_restricted:true}), {
+    headers: {"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store"}
+  });
 }
