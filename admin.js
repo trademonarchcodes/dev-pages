@@ -21,20 +21,17 @@ else{
   $("devcloud-list").innerHTML=(d.devcloud||[]).map(a=>{
    const connected=a.status==="active";
    const state=connected?"Connected":a.status==="disabled"?"Disconnected":"Not connected";
-   const menuItems=[
-    ...(!connected?["<button type='button' data-action='activate' data-id='"+esc(a.id)+"'>Connect Hosting</button>"]:[]),
-    "<button type='button' data-action='reconnect' data-id='"+esc(a.id)+"'>Reconnect Hosting</button>",
-    ...(connected?["<button type='button' data-action='deactivate' data-id='"+esc(a.id)+"'>Disconnect Hosting</button>"]:[])
-   ].join("");
+ 
    return "<article class='devcloud-card'>"+
     "<div class='devcloud-main'><p class='devcloud-name'>"+esc(a.label)+"</p>"+
     "<div class='devcloud-id'>Account ID: "+esc(a.account_id)+"</div>"+
     "<div class='devcloud-meta'><span class='devcloud-state "+(connected?"connected":"")+"'>"+state+"</span>"+
-    (a.is_default?"<span class='devcloud-default'>Default for new websites</span>":"")+
+    (a.is_default?"<span class='devcloud-default'>Default priority for new websites</span>":"")+
     (a.source==="environment"?"<span class='admin-muted'>Platform account</span>":"")+
-    "</div></div>"+
-    "<details class='devcloud-menu'><summary aria-label='Options for "+esc(a.label)+"' title='Hosting options'>⋮</summary>"+
-    "<div class='devcloud-menu-items'>"+menuItems+"</div></details></article>";
+    "</div></div><div class='devcloud-admin-controls'>"+
+    (!connected?"<button class='admin-action' type='button' data-action='activate' data-id='"+esc(a.id)+"'>Connect account</button>":"<button class='admin-action' type='button' data-action='deactivate' data-id='"+esc(a.id)+"'>Disable account</button>")+
+    "<button class='admin-action' type='button' data-action='reconnect' data-id='"+esc(a.id)+"'>Update credentials</button>"+
+    "</div></article>";
   }).join("")||"<p class='admin-muted'>No DevCloud accounts have been added.</p>";
 
   $("websites-table").innerHTML="<table class='admin-table'><thead><tr><th>Website</th><th>Customer ID</th><th>DevCloud account</th><th>Status</th><th>Expires</th></tr></thead><tbody>"+(d.websites||[]).map(w=>"<tr><td>"+esc(w.hostname)+"</td><td>"+esc(w.user_id)+"</td><td>"+esc(w.cloudflare_account_id||"—")+"</td><td>"+esc(w.status)+"</td><td>"+esc(w.expires_at||"—")+"</td></tr>").join("")+"</tbody></table>";
@@ -48,8 +45,6 @@ else{
  $("devcloud-list").addEventListener("click",async e=>{
   const b=e.target.closest("[data-action]");
   if(!b)return;
-  const details=b.closest("details");
-  if(details)details.open=false;
   let extra={};
   if(b.dataset.action==="reconnect"){
    const token=prompt("Enter the replacement hosting credential. It will be encrypted and never displayed again.");
@@ -65,10 +60,6 @@ else{
    await load();
   }catch(err){$("admin-error").textContent=err.message;}
   finally{b.disabled=false;}
- });
-
- document.addEventListener("click",e=>{
-  if(!e.target.closest(".devcloud-menu"))document.querySelectorAll(".devcloud-menu[open]").forEach(menu=>menu.open=false);
  });
 
  $("devcloud-form").addEventListener("submit",async e=>{
