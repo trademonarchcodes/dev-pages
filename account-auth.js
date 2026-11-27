@@ -312,8 +312,13 @@ async function loadBillingStatus(user) {
     const cloudMenu = $("member-cloud-menu");
     const cloudOptions = $("member-cloud-options");
     let selectedCloud = cloudMenu?.dataset.selected || "all";
+    const cloudTrigger = cloudMenu?.querySelector("summary");
     const applyCloudFilter = (selected, label) => {
       selectedCloud = selected;
+      if (cloudTrigger) cloudTrigger.innerHTML = "";
+      if (cloudTrigger) {
+        cloudTrigger.textContent = label + "  ⌄";
+      }
       if (cloudMenu) cloudMenu.dataset.selected = selected;
       list.querySelectorAll("[data-cloud-account]").forEach(card => {
         card.hidden = selected !== "all" && card.dataset.cloudAccount !== selected;
