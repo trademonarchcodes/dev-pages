@@ -23,7 +23,17 @@ export async function onRequestGet({ request, env }) {
     const paymentResult = await env.DB.prepare(
       "SELECT reference, domain_id, purpose, amount_kobo, currency, status, paid_at, created_at FROM domain_payments WHERE user_id = ? ORDER BY created_at DESC LIMIT 100"
     ).bind(user.id).all();
-    const hostingConnected = Boolean(env.CF_API_TOKEN);
+    const hostingAccountsResult = await env.DB.prepare(
+      "SELECT id, label, account_id, status, is_default FROM devcloud_accounts ORDER BY created_at ASC"
+    ).all();
+    const hostingAccounts = hostingAccountsResult.results || [];
+    const usedAccountIds = [...new Set((result.results || []).map(d => d.cloudflare_account_id).filter(Boolean))];
+    const memberHostingAccounts = usedAccountIds.map(accountId => {
+      const account = hostingAccounts.find(a => a.account_id === accountId);
+      return { account_id: accountId, label: account?.label || "Hosting account", status: account?.status || "unknown",
+        websites: (result.results || []).filter(d => d.cloudflare_account_id === accountId).length };
+    });
+    const hostingConnected = hostingAccounts.some(a => a.status === "active") || Boolean(env.CF_API_TOKEN && hostingAccounts.length === 0);
     const now = Date.now();
     const domains = (result.results || []).map((domain) => {
       const expiry = domain.expires_at ? new Date(domain.expires_at).getTime() : null;
@@ -32,6 +42,7 @@ export async function onRequestGet({ request, env }) {
     });
     return json({
       account: { registered_at: user.created_at, promo_eligible: promoEligible, hosting_connected: hostingConnected },
+      hosting_accounts: memberHostingAccounts,
       promotion: promoEligible ? { active: now < new Date(PROMO_ACCESS_END).getTime(), ends_at: PROMO_ACCESS_END } : { active: false, ends_at: null },
       pricing: { setup_ngn: 16000, renewal_ngn: 5500, cycle_days: 30, currency: "NGN" },
       domains,
