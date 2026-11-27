@@ -15,7 +15,7 @@ export async function onRequestPost({ request, env }) {
     if (!account || !["active","disabled"].includes(account.status)) return json({ error: "This website's hosting account is temporarily unavailable. Please contact DEVPAGES support." }, 409);
     if (isPromoUser(user) && Date.now() < Date.parse("2027-01-16T00:00:00.000Z")) return json({ error: "Your launch promotion is active. No payment is due yet." }, 409);
     if (purpose === "setup" && domain.status !== "pending_payment") return json({ error: "Setup payment is not due for this domain." }, 409);
-    if (purpose === "renewal" && !["active","suspended"].includes(domain.status)) return json({ error: "This domain is not ready for renewal." }, 409);
+    if (purpose === "renewal" && domain.status !== "suspended") return json({ error: "Renewal becomes available after the 30-day hosting period expires." }, 409);
     const amount = purpose === "setup" ? SETUP_AMOUNT : RENEWAL_AMOUNT;
     const reference = "dp_" + crypto.randomUUID().replace(/-/g, "");
     await env.DB.prepare("INSERT INTO domain_payments(reference,user_id,domain_id,purpose,amount_kobo,currency,status) VALUES(?,?,?,?,?,'NGN','pending')").bind(reference,user.id,domainId,purpose,amount).run();
