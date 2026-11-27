@@ -398,52 +398,78 @@ async function loadBillingStatus(user) {
       }
       if (domain.status === "active" || domain.status === "provisioning") {
         const upload = document.createElement("input");
-        upload.type = "file"; upload.accept = ".zip,application/zip"; upload.setAttribute("aria-label","Choose website ZIP");
+        upload.type = "file";
+        upload.multiple = true;
+        upload.accept = ".zip,.html,.htm,.css,.js,.mjs,.json,.svg,.png,.jpg,.jpeg,.webp,.gif,.ico,.pdf,.txt,.xml,.woff,.woff2";
+        upload.setAttribute("aria-label","Choose website ZIP or website files");
         upload.style.cssText = "display:block;margin-top:12px;max-width:100%";
+        const mimeMap = {html:"text/html; charset=utf-8",htm:"text/html; charset=utf-8",css:"text/css; charset=utf-8",js:"text/javascript; charset=utf-8",mjs:"text/javascript; charset=utf-8",json:"application/json",svg:"image/svg+xml",png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg",webp:"image/webp",gif:"image/gif",ico:"image/x-icon",txt:"text/plain; charset=utf-8",xml:"application/xml",pdf:"application/pdf",woff:"font/woff",woff2:"font/woff2"};
+        const toBase64 = (blob) => new Promise((resolve,reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result).split(",")[1]);
+          reader.onerror = () => reject(new Error("A selected file could not be read."));
+          reader.readAsDataURL(blob);
+        });
         upload.addEventListener("change", async () => {
-          const archive = upload.files?.[0]; if (!archive) return;
-          if (archive.size > 12 * 1024 * 1024) { showMessage("ZIP must be 12 MB or smaller.","error"); upload.value=""; return; }
+          const selected = Array.from(upload.files || []);
+          if (!selected.length) return;
+          if (selected.some(file => file.size > 8 * 1024 * 1024) || selected.reduce((sum,file)=>sum+file.size,0)>12*1024*1024) {
+            showMessage("Selected files must be 12 MB or smaller in total, with no individual file over 8 MB.","error");
+            upload.value = "";
+            return;
+          }
           try {
-            showMessage("Preparing website files…");
-            const JSZip = (await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm")).default;
-            const zip = await JSZip.loadAsync(archive);
-            const files = [];
-            let totalBytes = 0;
-            for (const [path, entry] of Object.entries(zip.files)) {
-              const parts = path.split("/");
-              if (entry.dir || path.startsWith("__MACOSX/") || path.endsWith(".DS_Store") || parts.some(part => [".git","node_modules",".wrangler","__MACOSX"].includes(part))) continue;
-              if (parts.some(part => part === ".." || part === ".")) throw new Error("ZIP contains an unsafe file path.");
-              if (path === "_worker.js" || path === "_worker.bundle" || path === "functions" || path.startsWith("functions/")) throw new Error("This ZIP contains a custom Worker or Pages Functions. DEVPAGES ZIP publishing currently supports static websites only.");
-              const blob = await entry.async("blob");
-              if (blob.size > 8 * 1024 * 1024) throw new Error("A website file is larger than 8 MB.");
-              totalBytes += blob.size;
-              if (totalBytes > 13 * 1024 * 1024) throw new Error("Your website files exceed the 13 MB total upload limit.");
-              const base64 = await new Promise((resolve,reject) => {
-                const reader = new FileReader(); reader.onload=()=>resolve(String(reader.result).split(",")[1]); reader.onerror=reject; reader.readAsDataURL(blob);
-              });
-              const ext = path.split(".").pop().toLowerCase();
-              const mimeMap = {html:"text/html; charset=utf-8",htm:"text/html; charset=utf-8",css:"text/css; charset=utf-8",js:"text/javascript; charset=utf-8",mjs:"text/javascript; charset=utf-8",json:"application/json",svg:"image/svg+xml",png:"image/png",jpg:"image/jpeg",jpeg:"image/jpeg",webp:"image/webp",gif:"image/gif",ico:"image/x-icon",txt:"text/plain; charset=utf-8",xml:"application/xml",pdf:"application/pdf",woff:"font/woff",woff2:"font/woff2"};
-              files.push({path,content:base64,content_type:mimeMap[ext]||blob.type||"application/octet-stream"});
-              if (files.length > 1000) throw new Error("ZIP contains more than 1,000 files.");
-            }
-            if (!files.some(file => file.path.toLowerCase() === "index.html")) {
-              const nestedIndex = files.find(file => file.path.toLowerCase().endsWith("/index.html"));
-              const prefix = nestedIndex?.path.split("/")[0];
-              if (!prefix || !files.every(file => file.path.startsWith(prefix + "/"))) throw new Error("Place index.html at the root of your website ZIP, or ZIP one single website folder.");
-              for (const file of files) file.path = file.path.slice(prefix.length + 1);
+            showMessage("Preparing your website files…");
+            let files = [];
+            const zipFiles = selected.filter(file => /\.zip$/i.test(file.name));
+            if (zipFiles.length) {
+              if (selected.length !== 1) throw new Error("Upload a ZIP by itself, or select your individual website files instead.");
+              const JSZip = (await import("https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm")).default;
+              let zip;
+              try { zip = await JSZip.loadAsync(zipFiles[0]); }
+              catch { throw new Error("This file is not a valid ZIP archive. Re-create the ZIP using your file manager's Compress option, then try again."); }
+              let totalBytes = 0;
+              for (const [path, entry] of Object.entries(zip.files)) {
+                const parts = path.split("/");
+                if (entry.dir || path.startsWith("__MACOSX/") || path.endsWith(".DS_Store") || parts.some(part => [".git","node_modules",".wrangler","__MACOSX"].includes(part))) continue;
+                if (parts.some(part => part === ".." || part === ".")) throw new Error("ZIP contains an unsafe file path.");
+                if (path === "_worker.js" || path === "_worker.bundle" || path === "functions" || path.startsWith("functions/")) throw new Error("Custom Workers and Pages Functions are not supported by this publishing option.");
+                const blob = await entry.async("blob");
+                if (blob.size > 8 * 1024 * 1024) throw new Error("A website file is larger than 8 MB.");
+                totalBytes += blob.size;
+                if (totalBytes > 13 * 1024 * 1024) throw new Error("Your uncompressed website files exceed the upload limit.");
+                const ext = path.split(".").pop().toLowerCase();
+                files.push({path,content:await toBase64(blob),content_type:mimeMap[ext]||blob.type||"application/octet-stream"});
+                if (files.length > 1000) throw new Error("Your ZIP contains more than 1,000 files.");
+              }
+              if (!files.some(file => file.path.toLowerCase() === "index.html")) {
+                const nestedIndex = files.find(file => file.path.toLowerCase().endsWith("/index.html"));
+                const prefix = nestedIndex?.path.split("/")[0];
+                if (!prefix || !files.every(file => file.path.startsWith(prefix + "/"))) throw new Error("Your ZIP must contain index.html at its root, or one single website folder containing it.");
+                for (const file of files) file.path = file.path.slice(prefix.length + 1);
+              }
+            } else {
+              files = await Promise.all(selected.map(async file => {
+                const path = (file.webkitRelativePath || file.name).replace(/^\/+/, "");
+                if (!path || path.split("/").some(part => part === ".." || part === ".")) throw new Error("One of the selected files has an invalid path.");
+                const ext = path.split(".").pop().toLowerCase();
+                if (!mimeMap[ext]) throw new Error("Unsupported file type: " + file.name);
+                if (path === "_worker.js" || path === "_worker.bundle" || path === "functions" || path.startsWith("functions/")) throw new Error("Custom Workers and Pages Functions are not supported by this publishing option.");
+                return {path,content:await toBase64(file),content_type:mimeMap[ext]};
+              }));
             }
             const homepage = files.find(file => file.path.toLowerCase() === "index.html");
-            if (homepage) homepage.path = "index.html";
-            if (!homepage) throw new Error("Your ZIP must contain an index.html homepage at its root.");
+            if (!homepage) throw new Error("To publish a website update, select index.html together with its related CSS, JavaScript, images and PDF files. Images or PDFs can be included as website assets, but cannot replace the homepage by themselves.");
             const response = await fetch("/api/domains/deploy", {method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({domain_id:domain.id,files})});
             const result = await response.json();
             if (!response.ok || !result.success) throw new Error(result.error || "Website publishing failed.");
-            showMessage("Website files uploaded. Your website is being prepared for launch.");
+            showMessage("Website files uploaded successfully. Your website is being prepared for launch.");
             await loadBillingStatus(user);
-          } catch(error) { showMessage(error.message || "Could not publish website.","error"); }
-          finally { upload.value=""; }
+          } catch(error) { showMessage(error.message || "Could not publish website.", "error"); }
+          finally { upload.value = ""; }
         });
-        const uploadLabel=document.createElement("p"); uploadLabel.textContent="Publish or update your website (ZIP, max 12 MB):";
+        const uploadLabel = document.createElement("p");
+        uploadLabel.textContent = "Publish or update your website (ZIP or multiple files: HTML, CSS, JavaScript, images and PDFs; max 12 MB):";
         card.append(uploadLabel,upload);
       }
       list.append(card);
