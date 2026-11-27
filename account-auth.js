@@ -762,15 +762,35 @@ async function loadBillingStatus(user) {
       if (!payload.payment_history?.length) {
         const empty = document.createElement("p"); empty.textContent = "No payments recorded yet."; history.append(empty);
       } else {
+        history.classList.add("payment-history-list");
         for (const payment of payload.payment_history) {
-          const row = document.createElement("div");
-          row.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap";
-          const details = document.createElement("span");
-          details.textContent = money(payment.amount_kobo / 100) + " · " + payment.purpose + " · " + payment.status + " · " + new Date(payment.created_at).toLocaleDateString();
-          row.append(details);
+          const row = document.createElement("article");
+          row.className = "payment-history-card";
+          const icon = document.createElement("span");
+          icon.className = "payment-history-icon";
+          icon.textContent = payment.status === "success" ? "✓" : payment.status === "pending" ? "◷" : "↗";
+          icon.setAttribute("aria-hidden", "true");
+          const main = document.createElement("div");
+          main.className = "payment-history-main";
+          const title = document.createElement("strong");
+          title.textContent = (payment.purpose || "Hosting payment").replace(/[_-]+/g," ");
+          const meta = document.createElement("small");
+          const date = new Date(payment.created_at);
+          meta.textContent = (Number.isNaN(date.getTime()) ? "Date unavailable" : date.toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"})) + (payment.reference ? " · Ref " + payment.reference : "");
+          main.append(title,meta);
+          const side = document.createElement("div");
+          side.className = "payment-history-side";
+          const amount = document.createElement("strong");
+          amount.className = "payment-history-amount";
+          amount.textContent = money(payment.amount_kobo / 100);
+          const status = document.createElement("span");
+          status.className = "payment-status-badge " + (payment.status === "success" ? "is-success" : payment.status === "pending" ? "is-pending" : "is-failed");
+          status.textContent = payment.status || "unknown";
+          side.append(amount,status);
+          row.append(icon,main,side);
           if (payment.status === "pending") {
             const verify = document.createElement("button");
-            verify.type = "button"; verify.className = "auth-submit"; verify.textContent = "Verify payment";
+            verify.type = "button"; verify.className = "auth-submit payment-verify-button"; verify.textContent = "Verify payment";
             verify.addEventListener("click", async () => {
               verify.disabled = true; verify.textContent = "Verifying…";
               try {
