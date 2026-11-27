@@ -492,12 +492,6 @@ async function loadBillingStatus(user) {
                 files.push({path,content:await toBase64(blob),content_type:mimeMap[ext]||blob.type||"application/octet-stream"});
                 if (files.length > 1000) throw new Error("Your ZIP contains more than 1,000 files.");
               }
-              if (!files.some(file => file.path.toLowerCase() === "index.html")) {
-                const nestedIndex = files.find(file => file.path.toLowerCase().endsWith("/index.html"));
-                const prefix = nestedIndex?.path.split("/")[0];
-                if (!prefix || !files.every(file => file.path.startsWith(prefix + "/"))) throw new Error("Your ZIP must contain index.html at its root, or one single website folder containing it.");
-                for (const file of files) file.path = file.path.slice(prefix.length + 1);
-              }
             } else {
               files = await Promise.all(selected.map(async file => {
                 const path = (file.webkitRelativePath || file.name).replace(/^\/+/, "");
@@ -509,14 +503,12 @@ async function loadBillingStatus(user) {
               }));
             }
             if (!files.some(file => file.path.toLowerCase() === "index.html")) {
-              const nestedIndex = files.find(file => file.path.toLowerCase().endsWith("/index.html"));
-              const prefix = nestedIndex?.path.split("/")[0];
+              const firstSegments = files.map(file => file.path.split("/")[0]);
+              const prefix = firstSegments[0];
               if (prefix && files.every(file => file.path.startsWith(prefix + "/"))) {
                 for (const file of files) file.path = file.path.slice(prefix.length + 1);
               }
             }
-            const homepage = files.find(file => file.path.toLowerCase() === "index.html");
-            if (!homepage) throw new Error("To publish a website update, select index.html together with its related CSS, JavaScript, images and PDF files. Images or PDFs can be included as website assets, but cannot replace the homepage by themselves.");
             const response = await fetch("/api/domains/deploy", {method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({domain_id:domain.id,files})});
             const result = await response.json();
             if (!response.ok || !result.success) throw new Error(result.error || "Website publishing failed.");
