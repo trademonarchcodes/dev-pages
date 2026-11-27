@@ -42,8 +42,8 @@ export async function encryptConnection(tokens,keyText) {
 }
 export const PLATFORM_CF_ACCOUNT_ID = "94f36f03ea5e3bdba6ca60c32b024936";
 export async function getCloudflareAccessToken(env, userId, accountId) {
-  if (accountId && accountId !== PLATFORM_CF_ACCOUNT_ID && env.DB) {
-    const managed = await env.DB.prepare("SELECT account_id,token_ciphertext,token_iv,source FROM devcloud_accounts WHERE account_id=? AND status='active'").bind(accountId).first();
+  if (accountId && env.DB) {
+    const managed = await env.DB.prepare("SELECT account_id,token_ciphertext,token_iv,source FROM devcloud_accounts WHERE account_id=? AND status IN ('active','disabled')").bind(accountId).first();
     if (managed?.source === "environment" && env.CF_API_TOKEN) return { tokens: { access_token: env.CF_API_TOKEN }, accounts: [{ id: accountId }] };
     if (managed?.token_ciphertext && env.CF_TOKEN_ENCRYPTION_KEY) {
       const tokens = await decryptConnection(managed, env.CF_TOKEN_ENCRYPTION_KEY);
