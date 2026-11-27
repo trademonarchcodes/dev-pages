@@ -2,7 +2,7 @@ import { json, getUser, isPromoUser, PROMO_ACCESS_END, PLATFORM_CF_ACCOUNT_ID, g
 
 export async function onRequestPost({ request, env }) {
   if (request.headers.get("Origin") !== new URL(request.url).origin) return json({ error: "Request origin rejected." }, 403);
-  if (!env.DB || !env.CF_API_TOKEN) return json({ error: "DEVPAGES hosting is not configured. Please contact support." }, 503);
+  if (!env.DB) return json({ error: "DEVPAGES hosting is not configured. Please contact support." }, 503);
 
   try {
     const user = await getUser(request, env);
