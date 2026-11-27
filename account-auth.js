@@ -376,7 +376,7 @@ async function loadBillingStatus(user) {
             const response = await fetch("/api/domains/deploy", {method:"POST",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({domain_id:domain.id,files})});
             const result = await response.json();
             if (!response.ok || !result.success) throw new Error(result.error || "Website publishing failed.");
-            showMessage("Website files uploaded. Cloudflare is preparing your deployment.");
+            showMessage("Website files uploaded. Your website is being prepared for launch.");
             await loadBillingStatus(user);
           } catch(error) { showMessage(error.message || "Could not publish website.","error"); }
           finally { upload.value=""; }
