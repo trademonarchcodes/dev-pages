@@ -453,6 +453,12 @@ async function loadDeveloperProfile(user) {
 async function loadBillingStatus(user) {
   const summary = $("billing-summary");
   const list = $("domain-list");
+  const paymentsSection = $("payments-section");
+  const history = $("payment-history");
+  const billingEmpty = $("billing-empty-state");
+  if (paymentsSection) paymentsSection.hidden = false;
+  if (billingEmpty) billingEmpty.hidden = true;
+  if (history && !history.dataset.loaded) history.textContent = "Loading payment history…";
   if (!summary || !list) return;
   try {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -499,7 +505,6 @@ async function loadBillingStatus(user) {
       const section = $(sectionId);
       if (section) section.hidden = !payload.account.hosting_connected;
     }
-    const paymentsSection = $("payments-section");
     if (paymentsSection) paymentsSection.hidden = false;
     if (domainForm) {
       for (const control of domainForm.elements) control.disabled = !payload.account.hosting_connected;
@@ -790,8 +795,8 @@ async function loadBillingStatus(user) {
       const selectedLabel = selectedCloud === "all" ? "All DevClouds" : (payload.hosting_accounts || []).find(a => a.account_id === selectedCloud)?.label || "selected DevCloud";
       applyCloudFilter(selectedCloud, selectedLabel);
     }
-    const history = $("payment-history");
     if (history) {
+      history.dataset.loaded = "1";
       history.replaceChildren();
       if (!payload.payment_history?.length) {
         const empty = document.createElement("p"); empty.textContent = "No payments recorded yet."; history.append(empty);
@@ -841,7 +846,22 @@ async function loadBillingStatus(user) {
         }
       }
     }
-  } catch (error) { summary.textContent = error.message || "Could not load billing details."; }
+  } catch (error) {
+    if (summary) summary.textContent = error.message || "Could not load billing details.";
+    if (paymentsSection) paymentsSection.hidden = false;
+    if (history) {
+      history.replaceChildren();
+      const message = document.createElement("p");
+      message.textContent = "We couldn't load your payment records right now. Your payment history has not been deleted. Please try again.";
+      message.style.cssText = "color:#aebfd5;font-size:13px;line-height:1.7;margin:0";
+      const retry = document.createElement("button");
+      retry.type = "button";
+      retry.className = "auth-submit";
+      retry.textContent = "↻  Reload payment history";
+      retry.addEventListener("click", () => loadBillingStatus(user));
+      history.append(message,retry);
+    }
+  }
 }
 const domainForm = $("domain-create-form");
 const domainNameInput = $("new-domain-name");
