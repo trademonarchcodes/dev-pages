@@ -300,7 +300,7 @@ async function loadDeveloperProfile(user) {
         try {
           const { error: saveError } = await supabase.from("developer_profiles").update({
             display_name: displayName, bio, website_url: website || null,
-            show_credit: $("developer-show-credit").checked, updated_at: new Date().toISOString()
+            show_credit: $("developer-show-credit").checked
           }).eq("id", user.id);
           if (saveError) throw saveError;
           await supabase.auth.updateUser({ data: { preferred_developer_name: displayName, full_name: displayName } });
