@@ -1,4 +1,5 @@
-// Scheduled every 15 minutes to enforce DEVPAGES 30-day hosting expiry.\nexport default {
+// Scheduled every 15 minutes to enforce DEVPAGES 30-day hosting expiry.
+export default {
   async scheduled(controller, env, ctx) {
     const response = await fetch("https://devpagesdomain.pages.dev/api/internal/expire", {
       method: "POST",
