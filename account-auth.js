@@ -126,7 +126,10 @@ if (signupForm) {
     setFieldError(emailInput, "email-error", emailValid ? "" : "Please enter a valid email address.");
     const passwordValid = checkPasswordRules();
     const confirmValid = checkConfirmPassword();
-    return nameValid && emailValid && passwordValid && confirmValid;
+    const legalAccepted = $("legal-consent")?.checked === true;
+    const legalError = $("legal-error");
+    if (legalError) legalError.textContent = legalAccepted ? "" : "Please accept the Terms & Conditions and Privacy Policy to create your account.";
+    return nameValid && emailValid && passwordValid && confirmValid && legalAccepted;
   }
 
   passwordInput.addEventListener("input", () => {
@@ -167,7 +170,7 @@ if (signupForm) {
         email, password,
         options: {
           emailRedirectTo: location.origin + "/login.html?verified=1",
-          data: { full_name: name }
+          data: { full_name: name, legal_consent: { terms_version: "2026-11-27", privacy_policy_version: "2026-11-27" } }
         }
       });
       if (error) throw error;
