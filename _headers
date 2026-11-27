@@ -8,3 +8,21 @@
 /api/*
   Cache-Control: no-store
   X-Robots-Tag: noindex, nofollow
+
+/admin.html
+  X-Robots-Tag: noindex, nofollow
+
+/admin-login.html
+  X-Robots-Tag: noindex, nofollow
+
+/account.html
+  X-Robots-Tag: noindex, nofollow
+
+/login.html
+  X-Robots-Tag: noindex, nofollow
+
+/signup.html
+  X-Robots-Tag: noindex, nofollow
+
+/reset-password.html
+  X-Robots-Tag: noindex, nofollow
