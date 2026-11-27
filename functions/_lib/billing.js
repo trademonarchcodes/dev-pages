@@ -191,7 +191,7 @@ export async function deployPagesFiles(env,domain,files,options={}) {
   const result=await deployment.json();
   if(!deployment.ok||!result.success)throw new Error(result.errors?.[0]?.message||"DEVPAGES could not publish this website.");
   if(options.suspension) {
-    await env.DB.prepare("UPDATE managed_domains SET status='suspended', suspended_deployment_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='provisioning'").bind(result.result?.id||null,domain.id).run();
+    await env.DB.prepare("UPDATE managed_domains SET status='suspended', suspended_deployment_id=?, original_deployment_id=COALESCE(original_deployment_id, ?), updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='suspending'").bind(result.result?.id||null,options.originalDeploymentId||null,domain.id).run();
   } else {
     await env.DB.prepare("UPDATE managed_domains SET status='active', original_deployment_id=?, suspended_deployment_id=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(result.result?.id||null,domain.id).run();
   }
@@ -248,4 +248,40 @@ export function safeEqual(a, b) {
   let diff = 0;
   for (let i=0;i<a.length;i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return diff === 0;
+}
+export async function suspendExpiredDomains(env) {
+  const due = await env.DB.prepare("SELECT id,user_id,project_name,hostname,cloudflare_account_id,original_deployment_id,status FROM managed_domains WHERE status IN ('active','suspending') AND expires_at IS NOT NULL AND datetime(expires_at) <= datetime('now') ORDER BY expires_at ASC LIMIT 50").all();
+  const results = [];
+  for (const row of due.results || []) {
+    const domain = { ...row };
+    try {
+      if (!domain.original_deployment_id) {
+        const {tokens} = await getCloudflareAccessToken(env,domain.user_id,domain.cloudflare_account_id);
+        const endpoint = "https://api.cloudflare.com/client/v4/accounts/"+encodeURIComponent(domain.cloudflare_account_id)+"/pages/projects/"+encodeURIComponent(domain.project_name)+"/deployments";
+        const response = await fetch(endpoint+"?env=production&per_page=10",{headers:{Authorization:"Bearer "+tokens.access_token}});
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.errors?.[0]?.message || "Could not locate the current website deployment.");
+        const latest = (data.result || []).find(item => item.latest_stage?.status === "success" || item.status === "success") || (data.result || [])[0];
+        if (!latest?.id) throw new Error("No successful production deployment is available to preserve.");
+        const claimed = await env.DB.prepare("UPDATE managed_domains SET status='suspending', original_deployment_id=?, updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='active' AND datetime(expires_at)<=datetime('now')").bind(latest.id,domain.id).run();
+        if (!claimed.meta?.changes) continue;
+        domain.original_deployment_id = latest.id;
+        domain.status = "suspending";
+      } else if (domain.status === "active") {
+        const claimed = await env.DB.prepare("UPDATE managed_domains SET status='suspending', updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='active' AND datetime(expires_at)<=datetime('now')").bind(domain.id).run();
+        if (!claimed.meta?.changes) continue;
+        domain.status = "suspending";
+      }
+      const html = "<!doctype html><html lang='en'><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Hosting paused · DEVPAGES</title><style>*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#080e19;color:#eef5ff;font:16px system-ui,sans-serif;padding:24px}.panel{max-width:520px;text-align:center;padding:42px 28px;border:1px solid #263a58;border-radius:24px;background:#101b2c;box-shadow:0 24px 80px #0008}.mark{width:54px;height:54px;margin:0 auto 22px;border-radius:17px;background:#173e72;color:#70b7ff;display:grid;place-items:center;font-size:27px}h1{font-size:clamp(27px,6vw,38px);margin:0 0 12px}p{color:#aebfd5;line-height:1.7;margin:0}.brand{margin-top:28px;color:#64aaff;font-weight:700;letter-spacing:.12em;font-size:12px}</style><main class='panel'><div class='mark'>◷</div><h1>This website is temporarily paused</h1><p>The 30-day DEVPAGES hosting period has ended. The website owner can restore access by renewing the hosting subscription.</p><div class='brand'>DEVPAGES</div></main></html>";
+      const bytes = new TextEncoder().encode(html);
+      let binary = "";
+      for (const byte of bytes) binary += String.fromCharCode(byte);
+      const encoded = btoa(binary);
+      const deployment = await deployPagesFiles(env,domain,[{path:"index.html",content:encoded,content_type:"text/html; charset=utf-8"}],{suspension:true,originalDeploymentId:domain.original_deployment_id});
+      results.push({id:domain.id,status:"suspended",deployment_id:deployment.id});
+    } catch (error) {
+      results.push({id:domain.id,status:"error",error:error.message || "Suspension failed"});
+    }
+  }
+  return {processed:results.length,results};
 }
