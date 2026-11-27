@@ -569,6 +569,65 @@ async function loadBillingStatus(user) {
   } catch (error) { summary.textContent = error.message || "Could not load billing details."; }
 }
 const domainForm = $("domain-create-form");
+const domainNameInput = $("new-domain-name");
+const suggestionPanel = $("domain-suggestions");
+if (domainForm && domainNameInput && suggestionPanel) {
+  let lastSuggestionBase = "";
+  let dismissedSuggestions = new Set();
+  const normalizeSuggestionBase = (value) => value.trim().toLowerCase()
+    .replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/\.pages\.dev$/, "")
+    .replace(/[^a-z0-9-]/g, "").replace(/^-+|-+$/g, "").slice(0, 50);
+  const renderDomainSuggestions = () => {
+    const base = normalizeSuggestionBase(domainNameInput.value);
+    if (base !== lastSuggestionBase) {
+      lastSuggestionBase = base;
+      dismissedSuggestions = new Set();
+    }
+    suggestionPanel.replaceChildren();
+    if (!base || !/^[a-z0-9](?:[a-z0-9-]{0,48}[a-z0-9])?$/.test(base)) {
+      suggestionPanel.hidden = true;
+      return;
+    }
+    const ideas = [base + "-web", base + "-digital", base + "-studio", base + "-online", "get-" + base]
+      .filter((name, index, all) => name !== base && all.indexOf(name) === index && name.length <= 50 && /^[a-z0-9](?:[a-z0-9-]{0,48}[a-z0-9])?$/.test(name) && !dismissedSuggestions.has(name));
+    if (!ideas.length) {
+      suggestionPanel.hidden = true;
+      return;
+    }
+    suggestionPanel.hidden = false;
+    const heading = document.createElement("p");
+    heading.textContent = "More name ideas · pages.dev";
+    heading.style.cssText = "margin:12px 0 8px;color:#9eb5d3;font-size:12px;font-weight:600;letter-spacing:.04em";
+    suggestionPanel.append(heading);
+    for (const idea of ideas) {
+      const row = document.createElement("div");
+      row.style.cssText = "display:flex;align-items:center;gap:8px;margin:6px 0;padding:8px 10px;border:1px solid #263b58;border-radius:10px;background:#0d1829";
+      const choose = document.createElement("button");
+      choose.type = "button";
+      choose.textContent = idea + ".pages.dev";
+      choose.style.cssText = "flex:1;min-width:0;text-align:left;border:0;background:transparent;color:#e8f2ff;font:500 13px 'Space Grotesk',sans-serif;cursor:pointer;overflow-wrap:anywhere";
+      choose.addEventListener("click", () => {
+        domainNameInput.value = idea + ".pages.dev";
+        domainNameInput.focus();
+        renderDomainSuggestions();
+      });
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.textContent = "×";
+      remove.title = "Remove this suggestion";
+      remove.setAttribute("aria-label", "Remove " + idea + ".pages.dev from suggestions");
+      remove.style.cssText = "flex:0 0 30px;width:30px;height:30px;border:1px solid #354b68;border-radius:8px;background:#14243a;color:#a9bdd7;font-size:20px;line-height:1;cursor:pointer";
+      remove.addEventListener("click", () => {
+        dismissedSuggestions.add(idea);
+        renderDomainSuggestions();
+      });
+      row.append(choose, remove);
+      suggestionPanel.append(row);
+    }
+  };
+  domainNameInput.addEventListener("input", renderDomainSuggestions);
+  renderDomainSuggestions();
+}
 if (domainForm) domainForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const button = domainForm.querySelector("button[type=submit]");
