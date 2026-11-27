@@ -214,3 +214,31 @@ p,.hero-lead,.section-heading p,.pricing-head p,.page-intro p,.notice-panel p,.p
 .homepage .audience-chip b{font-size:20px;color:#83ffe2}
 @media(max-width:850px){.homepage .features-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.homepage .audience-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:600px){.homepage .features-section,.homepage .audience-section{width:min(100% - 32px,1160px);padding:68px 0}.homepage .features-heading{grid-template-columns:1fr;gap:18px;margin-bottom:25px}.homepage .features-heading>p{font-size:14px}.homepage .features-grid{grid-template-columns:1fr;gap:13px}.homepage .feature-card{min-height:220px;padding:23px}.homepage .feature-icon{margin-bottom:19px}.homepage .audience-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.homepage .audience-chip{font-size:12px;padding:15px 8px}}
+
+
+/* Unified DEVPAGES visual system across navigation and account pages */
+:root{--sans:'Outfit','Space Grotesk',sans-serif;--cyan:#83ffe2;--blue:#62a8ff}
+body:not(.homepage){font-family:'Outfit','Space Grotesk',sans-serif;background:radial-gradient(ellipse at 12% 0%,rgba(40,112,220,.13),transparent 38%),radial-gradient(ellipse at 92% 18%,rgba(44,196,211,.07),transparent 34%),#070b14}
+body:not(.homepage) h1,body:not(.homepage) h2,body:not(.homepage) h3,body:not(.homepage) strong,body:not(.homepage) button,body:not(.homepage) input,body:not(.homepage) textarea,body:not(.homepage) select{font-family:'Outfit','Space Grotesk',sans-serif}
+body:not(.homepage) .topbar{border-bottom-color:rgba(105,190,255,.24);background:rgba(7,11,20,.72);backdrop-filter:blur(18px)}
+body:not(.homepage) .nav a{font-family:'Outfit','Space Grotesk',sans-serif;font-weight:700;transition:color .2s,transform .2s}
+body:not(.homepage) .nav a:hover,body:not(.homepage) .nav a[aria-current=page]{color:#8bffe0}
+body:not(.homepage) .nav-cta{font-family:'Outfit','Space Grotesk',sans-serif;font-weight:800;border-radius:9px;border-color:rgba(105,190,255,.55);background:linear-gradient(120deg,rgba(29,74,120,.34),rgba(14,33,58,.38));transition:.22s}
+body:not(.homepage) .nav-cta:hover{transform:translateY(-2px);border-color:#83ffe2;box-shadow:0 9px 28px rgba(55,155,255,.18);color:#8bffe0}
+body:not(.homepage) .page-shell{position:relative}
+body:not(.homepage) .page-intro{padding:42px 0 34px}
+body:not(.homepage) .page-intro h1{font-family:'Outfit','Space Grotesk',sans-serif;font-weight:800;letter-spacing:-.065em}
+body:not(.homepage) .page-intro h1 span{background:linear-gradient(100deg,#8bffe0,#69cfff 55%,#91aaff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+body:not(.homepage) .page-intro .section-kicker,body:not(.homepage) .auth-kicker,body:not(.homepage) .legal-kicker{font-family:'Outfit','Space Grotesk',sans-serif;font-weight:800;color:#8ddcff;letter-spacing:.16em}
+body:not(.homepage) .step,body:not(.homepage) .price-feature,body:not(.homepage) .notice-panel,body:not(.homepage) .shared-public-review,body:not(.homepage) .auth-card,body:not(.homepage) .auth-panel,body:not(.homepage) .legal-card,body:not(.homepage) .dash-card,body:not(.homepage) .dash-panel,body:not(.homepage) .metric-card,body:not(.homepage) .quick-grid>a,body:not(.homepage) .quick-grid>article{
+  border-color:rgba(111,169,238,.25);border-radius:16px;background:linear-gradient(145deg,rgba(19,36,61,.88),rgba(8,17,31,.94));box-shadow:0 12px 35px rgba(0,0,0,.16);transition:transform .24s ease,border-color .24s ease,box-shadow .24s ease
+}
+body:not(.homepage) .step:hover,body:not(.homepage) .price-feature:hover,body:not(.homepage) .notice-panel:hover,body:not(.homepage) .shared-public-review:hover,body:not(.homepage) .dash-card:hover,body:not(.homepage) .dash-panel:hover,body:not(.homepage) .metric-card:hover,body:not(.homepage) .quick-grid>a:hover,body:not(.homepage) .quick-grid>article:hover{
+  transform:translateY(-4px);border-color:rgba(115,239,229,.6);box-shadow:0 18px 42px rgba(0,0,0,.25),0 0 25px rgba(67,176,255,.1)
+}
+body:not(.homepage) .button,body:not(.homepage) .auth-submit,body:not(.homepage) .primary-btn,body:not(.homepage) .signup-submit{font-family:'Outfit','Space Grotesk',sans-serif;font-weight:800;border-radius:10px}
+body:not(.homepage) .primary,body:not(.homepage) .auth-submit,body:not(.homepage) .primary-btn{background:linear-gradient(110deg,#8bffe0 0%,#63d9ff 48%,#5795ff 100%);color:#06101e;box-shadow:0 10px 30px rgba(69,166,255,.2)}
+body:not(.homepage) input,body:not(.homepage) textarea,body:not(.homepage) select{border-radius:10px}
+body:not(.homepage) footer{font-family:'Outfit','Space Grotesk',sans-serif}
+body:not(.homepage) .legal-card h1,body:not(.homepage) .profile-card h1{font-family:'Outfit','Space Grotesk',sans-serif;font-weight:800}
+@media(prefers-reduced-motion:reduce){body:not(.homepage) *,body:not(.homepage) *:before,body:not(.homepage) *:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
