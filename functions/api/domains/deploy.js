@@ -7,7 +7,7 @@ export async function onRequestPost({request,env}) {
     const body=await request.json();
     const domainId=String(body.domain_id||"");
     const files=body.files;
-    if(!Array.isArray(files)||!files.length||files.length>1000)return json({error:"Upload a ZIP or website files (maximum 1,000 files)."},400);
+    if(!Array.isArray(files)||!files.length||files.length>1000)return json({error:"Upload one website ZIP file (maximum 1,000 files after extraction)."},400);
     let total=0;
     for(const file of files) {
       if(!file||typeof file.path!=="string"||typeof file.content!=="string"||file.content.length>11*1024*1024)return json({error:"One or more files are invalid or too large."},400);
