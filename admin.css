@@ -40,3 +40,29 @@
 .admin-site-empty{grid-column:1/-1;min-height:130px;display:grid;place-items:center;border:1px dashed rgba(115,169,224,.22);border-radius:14px}
 @media(max-width:900px){.admin-site-grid{grid-template-columns:1fr}}
 @media(max-width:600px){.admin-site-summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.admin-site-summary>div{padding:12px}.admin-site-summary strong{font-size:22px}.admin-site-toolbar{align-items:stretch;flex-direction:column}.admin-site-search{max-width:none}.admin-site-toolbar select{width:100%}.admin-site-card{padding:16px}.admin-site-domain{font-size:15px}.admin-site-countdown{align-items:flex-start;flex-direction:column}.admin-site-expiry{text-align:left;white-space:normal}}
+
+/* Premium responsive transaction ledger */
+.transaction-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:2px 0 19px}
+.transaction-summary article{position:relative;overflow:hidden;padding:17px 18px;border:1px solid rgba(112,175,229,.2);border-radius:15px;background:radial-gradient(circle at 100% 0,rgba(66,183,255,.13),transparent 58%),linear-gradient(145deg,#122943,#0a1728)}
+.transaction-summary article:after{content:"";position:absolute;right:-20px;bottom:-34px;width:90px;height:90px;border:1px solid rgba(118,220,255,.1);border-radius:50%}
+.transaction-summary span,.transaction-meta span{display:block;color:#86a7c8;font:9px "DM Mono",monospace;letter-spacing:.12em}
+.transaction-summary strong{display:block;margin-top:8px;color:#f1f8ff;font-size:26px;letter-spacing:-.04em;overflow-wrap:anywhere}
+.transaction-summary small{display:block;margin-top:4px;color:#829ab6;font-size:10px}
+.transaction-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.transaction-card{position:relative;overflow:hidden;min-width:0;padding:19px;border:1px solid rgba(110,177,231,.2);border-radius:17px;background:radial-gradient(ellipse at 100% 0,rgba(42,151,218,.13),transparent 48%),linear-gradient(145deg,#11243d,#091524 80%);box-shadow:0 13px 34px #0003;transition:transform .2s,border-color .2s,box-shadow .2s}
+.transaction-card:hover{transform:translateY(-3px);border-color:rgba(106,207,255,.48);box-shadow:0 18px 40px #0005,0 0 25px #3aa9e51a}
+.transaction-card:before{content:"";position:absolute;inset:0 auto 0 0;width:3px;background:linear-gradient(180deg,#59bfff,#80ffe1)}
+.transaction-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.transaction-index{color:#7f9bb9;font:10px "DM Mono",monospace;letter-spacing:.12em}.transaction-index b{color:#bfeaff}
+.transaction-amount{margin-top:17px;color:#f5fbff;font-size:clamp(26px,3vw,34px);font-weight:900;letter-spacing:-.055em}
+.transaction-purpose{margin-top:3px;color:#86a8c9;font-size:11px;text-transform:capitalize}
+.transaction-domain{display:flex;align-items:center;gap:11px;margin-top:17px;padding:12px;border:1px solid rgba(112,174,222,.15);border-radius:12px;background:#071525a8;min-width:0}
+.transaction-domain-icon{display:grid;place-items:center;width:35px;height:35px;flex:0 0 35px;border-radius:10px;background:#1a3d5b;color:#8bdcff;font-size:17px}
+.transaction-domain div{min-width:0}.transaction-domain small{display:block;color:#7795b5;font:8px "DM Mono",monospace;letter-spacing:.12em}.transaction-domain strong{display:block;margin-top:4px;color:#e2f1ff;font-size:12px;overflow-wrap:anywhere}
+.transaction-meta{display:grid;grid-template-columns:1fr 1fr;gap:13px 15px;margin-top:15px;padding-top:14px;border-top:1px solid rgba(112,163,213,.14)}
+.transaction-meta strong{display:block;margin-top:5px;color:#b9cde3;font-size:10px;font-weight:600;line-height:1.5;overflow-wrap:anywhere}
+.transaction-empty{grid-column:1/-1;display:grid;justify-items:center;gap:8px;padding:48px 18px;border:1px dashed rgba(112,175,229,.24);border-radius:16px;color:#8fa8c4;text-align:center}
+.transaction-empty span{display:grid;place-items:center;width:48px;height:48px;border:1px solid #396084;border-radius:15px;background:#102944;color:#84d9ff;font-size:23px}
+.transaction-empty strong{color:#e8f4ff;font-size:15px}.transaction-empty small{font-size:11px}
+@media(max-width:900px){.transaction-list{grid-template-columns:1fr}}
+@media(max-width:600px){.transaction-summary{grid-template-columns:1fr 1fr;gap:8px}.transaction-summary article{padding:13px}.transaction-summary article:last-child{grid-column:1/-1}.transaction-summary strong{font-size:23px}.transaction-card{padding:16px}.transaction-meta{gap:12px 10px}}
