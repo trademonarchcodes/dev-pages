@@ -7,6 +7,45 @@ const supabase = createClient(
 );
 
 const $ = (id) => document.getElementById(id);
+
+const dashboard = $("private-dashboard");
+const pageNames = { overview: "Overview", websites: "My websites", profile: "Developer profile", billing: "Billing & payments" };
+function setDashboardPage(page, updateUrl = true) {
+  if (!pageNames[page]) page = "overview";
+  document.querySelectorAll("[data-dashboard-view]").forEach(view => {
+    const active = view.dataset.dashboardView === page;
+    view.classList.toggle("is-current", active);
+    view.hidden = !active;
+  });
+  document.querySelectorAll("[data-dashboard-page]").forEach(button => {
+    const active = button.dataset.dashboardPage === page;
+    button.classList.toggle("is-active", active);
+    if (active) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
+  });
+  const title = $("workspace-page-title");
+  if (title) title.textContent = pageNames[page];
+  if (updateUrl && location.hash !== "#" + page) history.replaceState(null, "", "#" + page);
+  dashboard?.classList.remove("menu-open");
+  $("workspace-menu-toggle")?.setAttribute("aria-expanded", "false");
+  $("workspace-menu-toggle")?.setAttribute("aria-label", "Open dashboard navigation");
+}
+document.querySelectorAll("[data-dashboard-page]").forEach(button => button.addEventListener("click", () => setDashboardPage(button.dataset.dashboardPage)));
+document.querySelectorAll("[data-go-page]").forEach(button => button.addEventListener("click", () => setDashboardPage(button.dataset.goPage)));
+const menuToggle = $("workspace-menu-toggle");
+const overlay = $("workspace-overlay");
+function toggleWorkspaceMenu(force) {
+  const open = typeof force === "boolean" ? force : !dashboard?.classList.contains("menu-open");
+  dashboard?.classList.toggle("menu-open", open);
+  menuToggle?.setAttribute("aria-expanded", String(open));
+  menuToggle?.setAttribute("aria-label", open ? "Close dashboard navigation" : "Open dashboard navigation");
+}
+menuToggle?.addEventListener("click", () => toggleWorkspaceMenu());
+overlay?.addEventListener("click", () => toggleWorkspaceMenu(false));
+$("mobile-signout-button")?.addEventListener("click", () => $("signout-button")?.click());
+document.addEventListener("keydown", event => { if (event.key === "Escape") toggleWorkspaceMenu(false); });
+setDashboardPage(location.hash.slice(1), false);
+
 const message = $("auth-message");
 function showMessage(text, type = "success") {
   if (!message) return;
@@ -352,9 +391,13 @@ async function loadBillingStatus(user) {
     }
     if (overviewGrid) overviewGrid.hidden = !hostingReady;
     if (welcome) welcome.hidden = !hostingReady;
-    if (header) header.hidden = !hostingReady;
+
     if (dashNote) dashNote.hidden = !hostingReady;
     if (authMessage) authMessage.hidden = !hostingReady;
+    const websitesEmpty = $("websites-empty-state");
+    const billingEmpty = $("billing-empty-state");
+    if (websitesEmpty) websitesEmpty.hidden = hostingReady;
+    if (billingEmpty) billingEmpty.hidden = hostingReady;
     for (const sectionId of ["projects-card","domains-section","payments-section"]) {
       const section = $(sectionId);
       if (section) section.hidden = !payload.account.hosting_connected;
