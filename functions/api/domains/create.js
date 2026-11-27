@@ -16,16 +16,25 @@ export async function onRequestPost({ request, env }) {
       return json({ error: "Enter a valid name using 1–50 lowercase letters, numbers or hyphens. You can enter the name alone or include .pages.dev." }, 400);
     }
 
-    // Existing websites keep their assigned account. New websites use the admin-selected active DevCloud.
+    // Allocate new projects to the first active DevCloud with capacity.
+    // Existing projects retain their saved cloudflare_account_id and are never migrated.
+    const accountsResult = await env.DB.prepare(
+      "SELECT id, label, account_id, is_default, created_at FROM devcloud_accounts WHERE status='active' ORDER BY is_default DESC, created_at ASC"
+    ).all();
+    const accounts = accountsResult.results || [];
     let selected = null;
-    let registryCount = 0;
-    try {
-      selected = await env.DB.prepare("SELECT account_id FROM devcloud_accounts WHERE status='active' AND is_default=1 LIMIT 1").first();
-      const count = await env.DB.prepare("SELECT COUNT(*) AS total FROM devcloud_accounts").first();
-      registryCount = Number(count?.total || 0);
-    } catch {}
-    if (registryCount > 0 && !selected) return json({ error: "DEVPAGES hosting is temporarily unavailable. Please contact support." }, 503);
-    const accountId = selected?.account_id || PLATFORM_CF_ACCOUNT_ID;
+    for (const account of accounts) {
+      const usage = await env.DB.prepare(
+        "SELECT COUNT(*) AS total FROM managed_domains WHERE cloudflare_account_id=?"
+      ).bind(account.account_id).first();
+      if (Number(usage?.total || 0) < 100) { selected = account; break; }
+    }
+    if (!selected) {
+      return json({ error: accounts.length
+        ? "All connected hosting accounts have reached their 100-project limit. DEVPAGES will make more hosting capacity available soon."
+        : "DEVPAGES hosting is temporarily unavailable. Please contact support." }, 503);
+    }
+    const accountId = selected.account_id;
     const {tokens} = await getCloudflareAccessToken(env, user.id, accountId);
     const cf = await fetch("https://api.cloudflare.com/client/v4/accounts/" + encodeURIComponent(accountId) + "/pages/projects", {
       method: "POST",
