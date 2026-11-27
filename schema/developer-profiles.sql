@@ -14,7 +14,7 @@ create table if not exists public.developer_profiles (
 
 alter table public.developer_profiles enable row level security;
 grant select on public.developer_profiles to anon, authenticated;
-grant update (display_name, bio, website_url, show_credit) on public.developer_profiles to authenticated;
+grant update (display_name, bio, website_url, show_credit, avatar_url) on public.developer_profiles to authenticated;
 
 drop policy if exists "Developer profiles are public" on public.developer_profiles;
 create policy "Developer profiles are public" on public.developer_profiles
