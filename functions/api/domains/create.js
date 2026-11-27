@@ -25,7 +25,7 @@ export async function onRequestPost({ request, env }) {
     let selected = null;
     for (const account of accounts) {
       const usage = await env.DB.prepare(
-        "SELECT COUNT(*) AS total FROM managed_domains WHERE cloudflare_account_id=?"
+        "SELECT COUNT(*) AS total FROM managed_domains WHERE cloudflare_account_id=? AND status!='deleted'"
       ).bind(account.account_id).first();
       if (Number(usage?.total || 0) < 100) { selected = account; break; }
     }
