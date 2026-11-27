@@ -158,3 +158,32 @@ p,.hero-lead,.section-heading p,.pricing-head p,.page-intro p,.notice-panel p,.p
  .promo-strip>.text-link{white-space:normal}
 }
 @media(max-width:360px){.countdown{gap:4px!important}.countdown span{padding:9px 1px}.countdown b{font-size:24px}.countdown small{font-size:8px}}
+
+
+/* DEVPAGES homepage visual language — Outfit typography and brighter accents */
+.homepage{--sans:'Outfit','Space Grotesk',sans-serif;--cyan:#83ffe2;--blue:#62a8ff;font-family:'Outfit','Space Grotesk',sans-serif}
+.homepage h1,.homepage h2,.homepage h3,.homepage strong,.homepage .button,.homepage .nav a,.homepage .nav-cta,.homepage .text-link{font-family:'Outfit','Space Grotesk',sans-serif}
+.homepage h1{font-weight:800;letter-spacing:-.065em;line-height:.98}
+.homepage h1 span,.homepage .section-heading h2 span,.homepage .steps-section h2 span,.homepage .pricing-head h2 span,.homepage .faq-section h2 span,.homepage .final-cta h2 span{color:#7cebdc;background:linear-gradient(100deg,#8bffe0 0%,#69cfff 52%,#91aaff 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.homepage .eyebrow,.homepage .section-kicker,.homepage .price-label{font-family:'Outfit','Space Grotesk',sans-serif;font-weight:800;font-size:11px;letter-spacing:.17em;color:#8ddcff}
+.homepage .hero-lead,.homepage .section-heading p,.homepage .pricing-head p,.homepage .step p,.homepage .faq-section details p{font-family:'Outfit','Space Grotesk',sans-serif;font-weight:500;color:#c1cee3}
+.homepage .button{font-weight:800;letter-spacing:.01em;border-radius:9px}
+.homepage .primary{background:linear-gradient(110deg,#8bffe0 0%,#63d9ff 48%,#5795ff 100%);box-shadow:0 10px 34px rgba(69,166,255,.25)}
+.homepage .nav a,.homepage .nav-cta,.homepage .text-link{font-family:'Outfit','Space Grotesk',sans-serif;font-weight:700}
+.homepage .nav a:hover,.homepage .text-link:hover{color:#8bffe0}
+.homepage .nav-cta{border-color:rgba(105,190,255,.55);border-radius:8px;background:rgba(34,75,126,.18)}
+.homepage .hero-proof{font-family:'Outfit','Space Grotesk',sans-serif;font-size:12px;font-weight:600;color:#a8bad4}
+.homepage .float-card{border-color:rgba(113,190,255,.48);background:linear-gradient(145deg,rgba(18,39,67,.96),rgba(10,20,37,.96));border-radius:12px;box-shadow:0 18px 48px rgba(0,0,0,.35),0 0 24px rgba(49,137,255,.1)}
+.homepage .float-card small,.homepage .float-card em,.homepage .visual-caption{font-family:'Outfit','Space Grotesk',sans-serif;font-weight:700;letter-spacing:.12em}
+.homepage .card-domain strong,.homepage .card-status strong{font-family:'Outfit','Space Grotesk',sans-serif;font-weight:800}
+.homepage .planet{box-shadow:inset -20px -22px 45px #02050b,0 0 85px rgba(55,143,255,.32)}
+.homepage .steps-grid{gap:20px}
+.homepage .step{border:1px solid rgba(110,174,255,.2);border-radius:15px;background:linear-gradient(145deg,rgba(17,32,54,.78),rgba(9,17,31,.72));padding:25px;transition:transform .2s,border-color .2s,box-shadow .2s}
+.homepage .step:hover{transform:translateY(-5px);border-color:rgba(112,224,255,.55);box-shadow:0 16px 38px rgba(25,105,210,.14)}
+.homepage .step-number{font-family:'Outfit','Space Grotesk',sans-serif;font-weight:800;color:#8bffe0}
+.homepage .step h3{font-family:'Outfit','Space Grotesk',sans-serif;font-size:20px;font-weight:800;letter-spacing:-.025em}
+.homepage .step-icon{color:#81eaff}
+.homepage .final-cta{border:1px solid rgba(100,174,255,.24);border-radius:22px;background:radial-gradient(ellipse at 50% 0%,rgba(51,130,255,.19),transparent 65%),linear-gradient(145deg,#0e1b30,#091321)}
+.homepage footer{font-family:'Outfit','Space Grotesk',sans-serif}
+.homepage footer small,.homepage footer p{color:#aebed5}
+@media(max-width:760px){.homepage .hero{padding-top:72px;padding-bottom:68px}.homepage .hero h1{font-size:clamp(48px,13vw,72px)}.homepage .hero-lead{font-size:16px}.homepage .section-heading h2,.homepage .steps-section h2,.homepage .pricing-head h2,.homepage .faq-section h2,.homepage .final-cta h2{font-weight:800;letter-spacing:-.055em}.homepage .step{padding:21px}}
