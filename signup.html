@@ -7,9 +7,9 @@
 <link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/auth.css"></head><body>
 <main class="auth-shell"><div class="auth-wrap"><a class="auth-brand" href="/"><img src="/assets/devpages-logo.png" alt="DEVPAGES"></a>
 <section class="auth-panel"><div class="auth-kicker">YOUR SPACE STARTS HERE</div><h1>Create your <span>DEVPAGES</span> account.</h1>
-<p class="auth-copy">Set up your account with your details and a strong password.</p>
+<p class="auth-copy">Choose the developer name you want people to know you by. Your real name is not required.</p>
 <form class="auth-form" id="signup-form" novalidate>
-<div class="auth-field"><label for="full-name">FULL NAME</label><input id="full-name" name="name" type="text" autocomplete="name" maxlength="80" required placeholder="Enter your full name"><small class="field-error" id="name-error" aria-live="polite"></small></div>
+<div class="auth-field"><label for="full-name">PREFERRED DEVELOPER NAME</label><input id="full-name" name="name" type="text" autocomplete="nickname" maxlength="40" required placeholder="e.g. BrightDev"><small class="field-hint">This is your public developer identity. You can use a nickname or brand name.</small><small class="field-error" id="name-error" aria-live="polite"></small></div>
 <div class="auth-field"><label for="email">EMAIL ADDRESS</label><input id="email" name="email" type="email" autocomplete="email" required placeholder="you@example.com"><small class="field-error" id="email-error" aria-live="polite"></small></div>
 <div class="auth-field"><label for="password">CREATE PASSWORD</label><div class="password-input-wrap"><input id="password" name="password" type="password" autocomplete="new-password" required placeholder="Create a strong password" aria-describedby="password-rules"><button class="password-toggle" type="button" data-toggle-password="password" aria-label="Show password" aria-pressed="false"><span class="eye-open" aria-hidden="true">◉</span><span class="eye-closed" aria-hidden="true">⊘</span></button></div>
 <div class="password-rules" id="password-rules" aria-live="polite"><div class="rules-heading">Your password must contain:</div><ul>
