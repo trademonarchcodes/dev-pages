@@ -83,7 +83,7 @@ if (signupForm) {
   function validateSignup() {
     const nameValid = nameInput.value.trim().length >= 2;
     const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value.trim());
-    setFieldError(nameInput, "name-error", nameValid ? "" : "Please enter your full name.");
+    setFieldError(nameInput, "name-error", nameValid ? "" : "Please enter a developer name (at least 2 characters).");
     setFieldError(emailInput, "email-error", emailValid ? "" : "Please enter a valid email address.");
     const passwordValid = checkPasswordRules();
     const confirmValid = checkConfirmPassword();
@@ -247,7 +247,77 @@ if ($("account-name")) {
     $("account-name").textContent = displayName;
     $("account-email").textContent = user.email || "Email unavailable";
     $("account-status").textContent = user.email_confirmed_at ? "Email verified" : "Email confirmation pending";
+    await loadDeveloperProfile(data.user);
     await loadBillingStatus(data.user);
+  }
+}
+
+
+async function loadDeveloperProfile(user) {
+  const form = $("developer-profile-form");
+  if (!form) return;
+  const note = $("developer-profile-message");
+  try {
+    let { data: profile, error } = await supabase.from("developer_profiles")
+      .select("slug,display_name,bio,website_url,show_credit")
+      .eq("id", user.id).single();
+    if (error && error.code === "PGRST116") {
+      const fallbackName = user.user_metadata?.preferred_developer_name || user.user_metadata?.full_name || "Developer";
+      const { data: created, error: createError } = await supabase.from("developer_profiles")
+        .insert({ id: user.id, slug: fallbackName.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"") + "-" + user.id.replace(/-/g,"").slice(0,6), display_name: fallbackName })
+        .select("slug,display_name,bio,website_url,show_credit").single();
+      if (createError) throw createError;
+      profile = created;
+    } else if (error) throw error;
+    $("developer-display-name").value = profile.display_name || "";
+    $("developer-bio").value = profile.bio || "";
+    $("developer-website").value = profile.website_url || "";
+    $("developer-show-credit").checked = profile.show_credit !== false;
+    const profileUrl = location.origin + "/developer.html?u=" + encodeURIComponent(profile.slug);
+    const link = $("developer-profile-link");
+    link.href = profileUrl;
+    link.textContent = profileUrl;
+    if (!form.dataset.bound) {
+      form.dataset.bound = "1";
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const button = form.querySelector("button[type=submit]");
+        const displayName = $("developer-display-name").value.trim().replace(/\s+/g," ");
+        const bio = $("developer-bio").value.trim();
+        let website = $("developer-website").value.trim();
+        if (website && !/^https?:\/\//i.test(website)) website = "https://" + website;
+        if (website && !/^https?:\/\/[^\s]+\.[^\s]+$/i.test(website)) {
+          note.textContent = "Enter a valid portfolio URL.";
+          note.style.color = "#ff8b94";
+          return;
+        }
+        if (displayName.length < 2) {
+          note.textContent = "Developer name must contain at least 2 characters.";
+          note.style.color = "#ff8b94";
+          return;
+        }
+        setBusy(button, true, "Saving profile…");
+        try {
+          const { error: saveError } = await supabase.from("developer_profiles").update({
+            display_name: displayName, bio, website_url: website || null,
+            show_credit: $("developer-show-credit").checked, updated_at: new Date().toISOString()
+          }).eq("id", user.id);
+          if (saveError) throw saveError;
+          await supabase.auth.updateUser({ data: { preferred_developer_name: displayName, full_name: displayName } });
+          $("account-name").textContent = displayName;
+          note.textContent = "Developer profile saved.";
+          note.style.color = "#63d7a3";
+          showMessage("Your developer identity has been updated.");
+        } catch (saveError) {
+          note.textContent = saveError.message || "Could not save your profile.";
+          note.style.color = "#ff8b94";
+        } finally {
+          setBusy(button, false);
+        }
+      });
+    }
+  } catch (error) {
+    if (note) { note.textContent = error.message || "Developer profile could not be loaded."; note.style.color = "#ff8b94"; }
   }
 }
 
