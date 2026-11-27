@@ -309,3 +309,14 @@ body:not(.homepage) .legal-card h1,body:not(.homepage) .profile-card h1{font-fam
 .developer-save-button:hover span{transform:translateX(4px)}
 .developer-profile-message{margin:0;color:#9fb6d0}
 @media(max-width:560px){.developer-avatar-panel{align-items:flex-start;flex-direction:column}.developer-avatar-upload{width:100%;flex-wrap:wrap}.developer-avatar-upload-copy{min-width:150px}.developer-profile-link-card{padding:13px}.developer-credit-toggle{align-items:flex-start}.developer-toggle-pill{margin-top:2px}}
+
+
+/* Public profile URL: responsive wrapping and dedicated copy action */
+.developer-profile-link-card{display:flex;align-items:center;gap:12px;min-width:0}
+.developer-profile-link-copy{display:grid;gap:7px;flex:1;min-width:0}
+.developer-profile-link-copy a{display:block;min-width:0;max-width:100%;color:#eef7ff;font:700 12px/1.55 'Outfit','Space Grotesk',sans-serif;overflow-wrap:anywhere;word-break:break-word;text-decoration:none}
+.developer-profile-link-copy a:hover{color:#83ffe2;text-decoration:underline;text-underline-offset:3px}
+.developer-copy-link{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 12px;border:1px solid rgba(131,255,226,.34);border-radius:10px;background:linear-gradient(120deg,rgba(30,113,143,.3),rgba(27,67,111,.55));color:#a9fff0;font:800 11px 'Outfit','Space Grotesk',sans-serif;white-space:nowrap;cursor:pointer;transition:transform .2s,border-color .2s,background .2s}
+.developer-copy-link:hover{transform:translateY(-1px);border-color:#83ffe2;background:rgba(35,129,143,.35)}
+.developer-copy-link.is-copied{border-color:rgba(112,235,170,.65);background:rgba(33,119,91,.28);color:#9affc7}
+@media(max-width:560px){.developer-profile-link-card{align-items:flex-start;flex-wrap:wrap}.developer-profile-link-copy{flex:1 1 calc(100% - 58px)}.developer-copy-link{margin-left:50px}.developer-profile-link-copy a{font-size:11px}}
