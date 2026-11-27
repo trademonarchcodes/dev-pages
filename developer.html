@@ -8,21 +8,21 @@
 <link rel="stylesheet" href="/styles.css">
 <style>
 body{min-height:100vh;background:radial-gradient(circle at 15% 10%,rgba(48,119,255,.18),transparent 34%),#070b14;color:#f4f7ff;font-family:'Space Grotesk',sans-serif}
-.profile-wrap{width:min(100% - 32px,720px);margin:0 auto;padding:38px 0 70px}
+.profile-wrap{width:min(100% - 32px,900px);margin:0 auto;padding:38px 0 70px}
 .profile-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:48px}
 .profile-top img{width:140px}.profile-top a{color:#8db7ff;text-decoration:none}
-.profile-card{border:1px solid rgba(120,160,255,.2);background:rgba(12,20,36,.92);border-radius:24px;padding:clamp(24px,6vw,48px);box-shadow:0 24px 90px #0006}
+.profile-card{border:1px solid rgba(120,160,255,.2);background:rgba(12,20,36,.92);border-radius:24px;padding:clamp(20px,4vw,42px);box-shadow:0 24px 90px #0006}\n.profile-layout{display:grid;grid-template-columns:190px minmax(0,1fr);align-items:center;gap:clamp(22px,4vw,42px)}\n.profile-layout:has(.profile-avatar[hidden]){grid-template-columns:minmax(0,1fr)}\n.profile-copy{min-width:0}
 .kicker{font:12px 'DM Mono',monospace;letter-spacing:.16em;color:#73a7ff;text-transform:uppercase}
 h1{font-size:clamp(34px,7vw,56px);line-height:1.05;margin:14px 0 12px;overflow-wrap:anywhere}
 #bio{color:#aab8ce;line-height:1.8;white-space:pre-wrap}\n.profile-avatar{width:132px;height:132px;object-fit:cover;border-radius:50%;border:3px solid #347fff;box-shadow:0 10px 35px #0008;margin:0 0 18px}.profile-avatar[hidden]{display:none}
 .profile-link{display:inline-flex;margin-top:22px;padding:13px 18px;border-radius:12px;background:#347fff;color:white;text-decoration:none;font-weight:700}
-.profile-foot{color:#77869e;font-size:12px;margin-top:24px}
+.profile-foot{color:#77869e;font-size:12px;margin-top:24px}\n@media(max-width:560px){.profile-wrap{padding-top:24px}.profile-top{margin-bottom:30px}.profile-top img{width:118px}.profile-card{padding:20px;border-radius:20px}.profile-layout{grid-template-columns:104px minmax(0,1fr);gap:16px}.profile-avatar{max-width:104px;border-radius:16px}h1{font-size:clamp(25px,7vw,36px);margin:10px 0}.kicker{font-size:10px;letter-spacing:.1em}.profile-link{padding:11px 13px;font-size:13px;margin-top:16px}.profile-foot{margin-top:18px}}
 #profile-error{color:#ff9da5}
 </style>
 </head>
 <body><main class="profile-wrap">
 <header class="profile-top"><a href="/"><img src="/assets/devpages-logo.png" alt="DEVPAGES"></a><a href="/signup.html">Join DEVPAGES ↗</a></header>
-<section class="profile-card"><div class="kicker">DEVPAGES DEVELOPER PROFILE</div><img id="avatar" class="profile-avatar" src="" alt="Developer profile picture" hidden><h1 id="name">Loading developer…</h1><p id="bio"></p><a id="portfolio" class="profile-link" href="#" target="_blank" rel="noopener" hidden>Visit portfolio ↗</a><p id="profile-error" role="status"></p><div class="profile-foot">A developer building and publishing with DEVPAGES.</div></section>
+<section class="profile-card"><div class="profile-layout"><img id="avatar" class="profile-avatar" src="" alt="Developer profile picture" hidden><div class="profile-copy"><div class="kicker">DEVPAGES DEVELOPER PROFILE</div><h1 id="name">Loading developer…</h1><p id="bio"></p><a id="portfolio" class="profile-link" href="#" target="_blank" rel="noopener" hidden>Visit portfolio ↗</a><p id="profile-error" role="status"></p><div class="profile-foot">A developer building and publishing with DEVPAGES.</div></div></div></section>
 </main>
 <script type="module">
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.102.0/+esm";
