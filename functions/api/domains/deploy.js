@@ -24,8 +24,8 @@ export async function onRequestPost({request,env}) {
     // Add a DEVPAGES developer credit only when the site has no existing attribution.
     // Profile details are read through the signed-in user's Supabase session; no service key is exposed.
     try {
-      const accessToken=(request.headers.get("Authorization")||"").replace(/^Bearer\\s+/i,"");
-      const profileUrl=new URL(env.SUPABASE_URL.replace(/\\/$/,"")+"/rest/v1/developer_profiles");
+      const accessToken=(request.headers.get("Authorization")||"").replace(/^Bearer\s+/i,"");
+      const profileUrl=new URL(env.SUPABASE_URL.replace(/\/$/,"")+"/rest/v1/developer_profiles");
       profileUrl.searchParams.set("id","eq."+user.id);
       profileUrl.searchParams.set("select","slug,display_name,website_url,show_credit");
       profileUrl.searchParams.set("limit","1");
@@ -36,17 +36,17 @@ export async function onRequestPost({request,env}) {
         const profiles=await profileResponse.json();
         const profile=profiles?.[0];
         if(profile && profile.show_credit !== false && profile.display_name && profile.slug) {
-          const htmlFiles=files.filter(file=>/\\.html?$/i.test(file.path));
+          const htmlFiles=files.filter(file=>/\.html?$/i.test(file.path));
           const existingCredit=htmlFiles.some(file=>{
             try {
               const bytes=Uint8Array.from(atob(file.content),ch=>ch.charCodeAt(0));
               const html=new TextDecoder().decode(bytes);
-              return /(?:developed|built|designed|created|crafted)\\s+by\\b/i.test(html);
+              return /(?:developed|built|designed|created|crafted)\s+by\b/i.test(html);
             } catch { return false; }
           });
           if(!existingCredit && htmlFiles.length) {
             const escapeHtml=value=>String(value).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
-            const destination=profile.website_url && /^https?:\\/\\//i.test(profile.website_url)
+            const destination=profile.website_url && /^https?:\/\//i.test(profile.website_url)
               ? profile.website_url
               : "https://devpagesdomain.pages.dev/developer.html?u="+encodeURIComponent(profile.slug);
             const credit='<div class="devpages-developer-credit" style="padding:14px 12px;text-align:center;font:500 12px/1.5 Arial,sans-serif;color:#8794a8"><span>Developed by </span><a href="'+escapeHtml(destination)+'" target="_blank" rel="noopener noreferrer" style="color:#258cff;text-decoration:none;font-weight:700">'+escapeHtml(profile.display_name)+'</a></div>';
@@ -54,8 +54,8 @@ export async function onRequestPost({request,env}) {
               try {
                 const bytes=Uint8Array.from(atob(file.content),ch=>ch.charCodeAt(0));
                 let html=new TextDecoder().decode(bytes);
-                if(/<\\/footer\\s*>/i.test(html)) html=html.replace(/<\\/footer\\s*>/i,credit+"</footer>");
-                else if(/<\\/body\\s*>/i.test(html)) html=html.replace(/<\\/body\\s*>/i,credit+"</body>");
+                if(/<\/footer\s*>/i.test(html)) html=html.replace(/<\/footer\s*>/i,credit+"</footer>");
+                else if(/<\/body\s*>/i.test(html)) html=html.replace(/<\/body\s*>/i,credit+"</body>");
                 else html+=credit;
                 const encoded=new TextEncoder().encode(html);
                 let binary="";
