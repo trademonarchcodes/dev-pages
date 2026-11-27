@@ -118,3 +118,54 @@
 .workspace-content .dash-card{padding:19px;border-radius:14px}
 }
 @media(max-width:380px){.workspace-mobile-brand img{width:105px}.mobile-workbar{gap:9px;padding:0 11px}.workspace-mobile-signout{padding:8px 9px}.workspace-content{padding-left:13px;padding-right:13px}}
+
+
+/* Independent billing workspace */
+.billing-dashboard{width:100%;max-width:1180px;margin:0 auto}
+.billing-page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:24px}
+.billing-page-heading h1{margin:8px 0 7px;color:#f3f8ff;font:800 clamp(27px,4vw,39px)/1.08 'Outfit','Space Grotesk',sans-serif;letter-spacing:-.045em}
+.billing-page-heading h1 span{color:#65dfff}
+.billing-page-heading p{margin:0;color:#9db1ca;font-size:13px;line-height:1.6}
+.billing-refresh-button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:10px 15px;border:1px solid rgba(102,197,255,.35);border-radius:11px;background:linear-gradient(120deg,rgba(24,85,132,.36),rgba(20,49,81,.7));color:#b9edff;font:800 12px 'Outfit','Space Grotesk',sans-serif;cursor:pointer;white-space:nowrap;transition:.2s}
+.billing-refresh-button:hover{border-color:#83ffe2;transform:translateY(-1px);box-shadow:0 8px 24px rgba(48,153,220,.14)}
+.billing-refresh-button:disabled{opacity:.55;cursor:wait;transform:none}
+.billing-overview-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:0 0 20px}
+.billing-stat-card{display:flex;align-items:center;gap:14px;min-width:0;padding:19px;border:1px solid rgba(105,169,231,.2);border-radius:17px;background:radial-gradient(circle at 0 0,rgba(66,158,228,.13),transparent 62%),linear-gradient(145deg,rgba(16,35,59,.96),rgba(8,17,31,.98));box-shadow:0 12px 30px rgba(0,0,0,.12)}
+.billing-stat-icon{width:43px;height:43px;flex:0 0 43px;display:grid;place-items:center;border:1px solid rgba(110,210,255,.27);border-radius:13px;background:rgba(65,161,211,.12);color:#83e8ff;font:800 20px 'Outfit','Space Grotesk',sans-serif}
+.billing-stat-card>div{display:grid;gap:4px;min-width:0}
+.billing-stat-card small,.billing-history-heading small{color:#8dcdf0;font:800 9px 'Outfit','Space Grotesk',sans-serif;letter-spacing:.15em}
+.billing-stat-card strong{color:#f5f9ff;font:800 clamp(19px,2.4vw,25px)/1.1 'Outfit','Space Grotesk',sans-serif;overflow-wrap:anywhere}
+.billing-stat-card>div>span{color:#8198b5;font:500 10px 'Outfit','Space Grotesk',sans-serif}
+.billing-history-panel{padding:clamp(17px,3vw,25px)!important;border:1px solid rgba(105,169,231,.2)!important;background:linear-gradient(145deg,rgba(14,29,49,.97),rgba(7,15,28,.99))!important}
+.billing-history-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.billing-history-heading h2{margin:5px 0;color:#f2f7ff;font:800 21px 'Outfit','Space Grotesk',sans-serif;letter-spacing:-.03em}
+.billing-history-heading p{margin:0;color:#91a7c1;font-size:12px;line-height:1.5}
+.billing-secure-label{display:inline-flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid rgba(96,214,177,.2);border-radius:99px;background:rgba(34,112,91,.12);color:#9be9cb;font:700 9px 'Outfit','Space Grotesk',sans-serif;white-space:nowrap}
+.billing-secure-label i{width:6px;height:6px;border-radius:50%;background:#64e6b3;box-shadow:0 0 10px #64e6b3}
+.payment-history-list{display:grid;gap:11px}
+.payment-history-card{display:grid;grid-template-columns:42px minmax(0,1fr) auto;align-items:center;gap:13px;padding:15px;border:1px solid rgba(103,150,201,.17);border-radius:14px;background:linear-gradient(115deg,rgba(17,37,62,.82),rgba(9,20,35,.9));transition:border-color .2s,transform .2s,box-shadow .2s}
+.payment-history-card:hover{transform:translateY(-2px);border-color:rgba(103,209,255,.4);box-shadow:0 10px 25px rgba(0,0,0,.13)}
+.payment-history-icon{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;font:900 18px 'Outfit','Space Grotesk',sans-serif}
+.payment-history-icon.is-success{color:#86f3c2;background:rgba(48,174,124,.14);border:1px solid rgba(93,225,171,.25)}
+.payment-history-icon.is-pending{color:#ffd68a;background:rgba(205,151,55,.13);border:1px solid rgba(255,197,96,.23)}
+.payment-history-icon.is-failed{color:#ff9da8;background:rgba(205,75,91,.13);border:1px solid rgba(255,119,137,.22)}
+.payment-history-main{display:grid;gap:5px;min-width:0}
+.payment-history-main>strong{color:#eef5ff;font:750 14px 'Outfit','Space Grotesk',sans-serif}
+.payment-history-main>small{color:#8ea5c1;font:500 10px 'Outfit','Space Grotesk',sans-serif}
+.payment-reference-copy{justify-self:start;max-width:100%;padding:0;border:0;background:none;color:#78c9f4;font:500 10px 'DM Mono',monospace;overflow-wrap:anywhere;text-align:left;cursor:pointer}
+.payment-history-side{display:grid;justify-items:end;gap:7px}
+.payment-history-amount{color:#f5f9ff;font:800 16px 'Outfit','Space Grotesk',sans-serif;white-space:nowrap}
+.payment-status-badge{display:inline-flex;padding:5px 9px;border-radius:99px;font:800 9px 'Outfit','Space Grotesk',sans-serif;text-transform:capitalize;white-space:nowrap}
+.payment-status-badge.is-success{color:#8cf0bf;background:rgba(43,164,112,.15);border:1px solid rgba(86,216,153,.23)}
+.payment-status-badge.is-pending{color:#ffd68a;background:rgba(190,135,40,.14);border:1px solid rgba(244,187,83,.22)}
+.payment-status-badge.is-failed{color:#ff9da8;background:rgba(191,66,82,.14);border:1px solid rgba(240,105,122,.22)}
+.payment-verify-button{grid-column:2/-1;justify-self:start;padding:8px 12px;border:1px solid rgba(104,195,255,.3);border-radius:9px;background:rgba(42,114,165,.15);color:#aee6ff;font:700 10px 'Outfit','Space Grotesk',sans-serif;cursor:pointer}
+.billing-state{min-height:175px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:25px 14px;text-align:center;border:1px dashed rgba(109,165,215,.2);border-radius:14px;background:rgba(8,19,33,.45)}
+.billing-state>strong{color:#e9f3ff;font:750 14px 'Outfit','Space Grotesk',sans-serif}
+.billing-state>p{max-width:430px;margin:0;color:#91a7c1;font:500 11px/1.7 'Outfit','Space Grotesk',sans-serif}
+.billing-state-error{border-color:rgba(255,177,112,.25)}
+.billing-empty-icon{width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:rgba(81,164,222,.12);color:#85dfff;font-size:22px}
+.billing-loader{width:25px;height:25px;border:2px solid rgba(105,198,255,.2);border-top-color:#83e8ff;border-radius:50%;animation:billing-spin .8s linear infinite}
+@keyframes billing-spin{to{transform:rotate(360deg)}}
+@media(max-width:760px){.billing-overview-grid{grid-template-columns:1fr;gap:10px}.billing-stat-card{padding:15px}.billing-stat-icon{width:39px;height:39px;flex-basis:39px}.billing-page-heading{align-items:flex-start}.billing-history-heading{align-items:flex-start}}
+@media(max-width:480px){.billing-page-heading{flex-direction:column}.billing-page-heading .billing-refresh-button{align-self:flex-start}.payment-history-card{grid-template-columns:36px minmax(0,1fr);gap:10px;padding:12px}.payment-history-icon{width:35px;height:35px}.payment-history-side{grid-column:2;grid-row:2;display:flex;align-items:center;justify-content:space-between;justify-items:initial}.payment-history-amount{font-size:15px}.payment-verify-button{grid-column:2}.billing-secure-label{font-size:8px;padding:7px}}
