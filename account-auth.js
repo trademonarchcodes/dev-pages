@@ -309,17 +309,46 @@ async function loadBillingStatus(user) {
       : payload.account.promo_eligible && payload.promotion.active
         ? "Launch promotion active until 16 January 2027. Each eligible domain has its own countdown."
         : "Per domain: " + money(payload.pricing.setup_ngn) + " setup + " + money(payload.pricing.renewal_ngn) + " every 30 days.";
+    const cloudFilter = $("member-cloud-filter");
+    const cloudSummary = $("member-cloud-summary");
+    if (cloudFilter) {
+      const current = cloudFilter.value || "all";
+      cloudFilter.replaceChildren();
+      const allOption = document.createElement("option"); allOption.value = "all"; allOption.textContent = "All DevClouds"; cloudFilter.append(allOption);
+      for (const account of (payload.hosting_accounts || [])) {
+        const option = document.createElement("option"); option.value = account.account_id;
+        option.textContent = account.label + " · " + account.websites + " website(s)";
+        cloudFilter.append(option);
+      }
+      cloudFilter.value = [...cloudFilter.options].some(o => o.value === current) ? current : "all";
+      if (!cloudFilter.dataset.bound) {
+        cloudFilter.dataset.bound = "1";
+        cloudFilter.addEventListener("change", () => {
+          const selected = cloudFilter.value;
+          list.querySelectorAll("[data-cloud-account]").forEach(card => {
+            card.hidden = selected !== "all" && card.dataset.cloudAccount !== selected;
+          });
+          if (cloudSummary) cloudSummary.textContent = selected === "all"
+            ? "Showing websites across all your DevCloud accounts. Existing websites remain connected where they were created."
+            : "Showing websites assigned to this DevCloud. Switching views does not move or disconnect websites.";
+        });
+      }
+      if (cloudSummary) cloudSummary.textContent = "Your websites remain connected to their assigned DevCloud, even when you switch this view.";
+    }
     list.replaceChildren();
     if (!payload.domains.length) {
       const empty = document.createElement("p"); empty.textContent = "No domains yet. Add your first domain above."; list.append(empty);
     }
     for (const domain of payload.domains) {
       const card = document.createElement("article"); card.className = "dash-card";
+      card.dataset.cloudAccount = domain.cloudflare_account_id || "";
       const heading = document.createElement("h3"); heading.textContent = domain.hostname;
+      const cloudName = (payload.hosting_accounts || []).find(a => a.account_id === domain.cloudflare_account_id)?.label || "Assigned DevCloud";
+      const cloudLine = document.createElement("p"); cloudLine.textContent = "Hosted on: " + cloudName;
       const status = document.createElement("p"); status.textContent = "Status: " + domain.status.replaceAll("_", " ");
       const countdown = document.createElement("p");
       countdown.textContent = domain.expires_at ? (domain.is_expired ? "Subscription expired" : domain.days_remaining + " day(s) remaining") + " · Expires " + new Date(domain.expires_at).toLocaleDateString() : "Awaiting setup payment";
-      card.append(heading,status,countdown);
+      card.append(heading,cloudLine,status,countdown);
       if (domain.status === "pending_payment" || domain.status === "suspended" || domain.status === "active") {
         const button = document.createElement("button"); button.className = "auth-submit";
         const purpose = domain.status === "pending_payment" ? "setup" : "renewal";
