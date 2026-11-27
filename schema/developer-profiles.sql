@@ -66,3 +66,30 @@ select
   coalesce(nullif(trim(u.raw_user_meta_data ->> 'preferred_developer_name'), ''), nullif(trim(u.raw_user_meta_data ->> 'full_name'), ''), split_part(u.email, '@', 1), 'Developer')
 from auth.users u
 on conflict (id) do nothing;
+
+
+-- Public developer profile picture/logo.
+alter table public.developer_profiles add column if not exists avatar_url text;
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('developer-avatars', 'developer-avatars', true, 2097152, array['image/jpeg','image/png','image/webp'])
+on conflict (id) do update set
+  public = excluded.public,
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "Developer avatar uploads own folder" on storage.objects;
+create policy "Developer avatar uploads own folder"
+on storage.objects for insert to authenticated
+with check (bucket_id = 'developer-avatars' and (storage.foldername(name))[1] = (select auth.uid()::text));
+
+drop policy if exists "Developer avatar updates own folder" on storage.objects;
+create policy "Developer avatar updates own folder"
+on storage.objects for update to authenticated
+using (bucket_id = 'developer-avatars' and (storage.foldername(name))[1] = (select auth.uid()::text))
+with check (bucket_id = 'developer-avatars' and (storage.foldername(name))[1] = (select auth.uid()::text));
+
+drop policy if exists "Developer avatar deletes own folder" on storage.objects;
+create policy "Developer avatar deletes own folder"
+on storage.objects for delete to authenticated
+using (bucket_id = 'developer-avatars' and (storage.foldername(name))[1] = (select auth.uid()::text));
