@@ -55,7 +55,7 @@ export async function onRequestPost({ request, env }) {
       ? (returnedSubdomain.endsWith(".pages.dev") ? returnedSubdomain : returnedSubdomain + ".pages.dev")
       : actualName + ".pages.dev";
     const requestedHostname = name + ".pages.dev";
-    const promo = isPromoUser(user) && Date.now() < Date.parse(PROMO_ACCESS_END);
+    const promo = isPromoUser() && Date.now() < Date.parse(PROMO_ACCESS_END);
     const id = crypto.randomUUID();
     const expiry = promo ? PROMO_ACCESS_END : null;
 
