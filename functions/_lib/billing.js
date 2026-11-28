@@ -1,6 +1,6 @@
-export const PROMO_START = "2026-10-15T00:00:00.000Z";
-export const PROMO_END = "2026-11-16T00:00:00.000Z";
-export const PROMO_ACCESS_END = "2027-01-16T00:00:00.000Z";
+export const PROMO_START = "2026-11-27T23:00:00.000Z";
+export const PROMO_END = "2027-01-15T23:00:00.000Z";
+export const PROMO_ACCESS_END = "2027-01-15T23:00:00.000Z";
 export const SETUP_AMOUNT = 1600000;
 export const RENEWAL_AMOUNT = 550000;
 export const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
@@ -11,9 +11,9 @@ export async function getUser(request, env) {
   if (!response.ok) return null;
   return response.json();
 }
-export function isPromoUser(user) {
-  const created = new Date(user.created_at).getTime();
-  return created >= Date.parse(PROMO_START) && created < Date.parse(PROMO_END);
+export function isPromoUser() {
+  const now = Date.now();
+  return now >= Date.parse(PROMO_START) && now < Date.parse(PROMO_END);
 }
 export function isPaystackKeyAllowed(env) {
   const mode=(env.PAYSTACK_MODE||"test").toLowerCase();
