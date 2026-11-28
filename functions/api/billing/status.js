@@ -1,7 +1,7 @@
 const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" } });
-const PROMO_START = "2026-10-15T00:00:00.000Z";
-const PROMO_END = "2026-11-16T00:00:00.000Z";
-const PROMO_ACCESS_END = "2027-01-16T00:00:00.000Z";
+const PROMO_START = "2026-11-27T23:00:00.000Z";
+const PROMO_END = "2027-01-15T23:00:00.000Z";
+const PROMO_ACCESS_END = "2027-01-15T23:00:00.000Z";
 export async function onRequestGet({ request, env }) {
   const origin = request.headers.get("Origin");
   if (origin && origin !== new URL(request.url).origin) return json({ error: "Request origin rejected." }, 403);
@@ -15,8 +15,8 @@ export async function onRequestGet({ request, env }) {
     if (!auth.ok) return json({ error: "Session expired. Please sign in again." }, 401);
     const user = await auth.json();
     if (!user?.id || !user.created_at) return json({ error: "Could not verify account details." }, 401);
-    const registered = new Date(user.created_at);
-    const promoEligible = registered >= new Date(PROMO_START) && registered < new Date(PROMO_END);
+    const now = Date.now();
+    const promoEligible = now >= new Date(PROMO_START).getTime() && now < new Date(PROMO_END).getTime();
     const result = await env.DB.prepare(
       "SELECT id, project_name, hostname, status, promo_eligible, activated_at, expires_at, created_at, cloudflare_account_id FROM managed_domains WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC"
     ).bind(user.id).all();
@@ -34,7 +34,6 @@ export async function onRequestGet({ request, env }) {
         websites: (result.results || []).filter(d => d.cloudflare_account_id === accountId).length };
     });
     const hostingConnected = hostingAccounts.some(a => a.status === "active") || Boolean(env.CF_API_TOKEN && hostingAccounts.length === 0);
-    const now = Date.now();
     const domains = (result.results || []).map((domain) => {
       const expiry = domain.expires_at ? new Date(domain.expires_at).getTime() : null;
       const remaining = expiry ? Math.max(0, Math.ceil((expiry - now) / 86400000)) : null;
