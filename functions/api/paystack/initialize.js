@@ -8,12 +8,12 @@ export async function onRequestPost({ request, env }) {
     const body = await request.json();
     const domainId = String(body.domain_id || "");
     const purpose = body.purpose === "renewal" ? "renewal" : "setup";
-    const domain = await env.DB.prepare("SELECT id, user_id, status, expires_at, cloudflare_account_id FROM managed_domains WHERE id=? AND user_id=?").bind(domainId, user.id).first();
+    const domain = await env.DB.prepare("SELECT id, user_id, status, expires_at, cloudflare_account_id, promo_eligible FROM managed_domains WHERE id=? AND user_id=?").bind(domainId, user.id).first();
     if (!domain) return json({ error: "Domain not found." }, 404);
     if (!domain.cloudflare_account_id) return json({ error: "This website's hosting assignment needs attention. Please use Reconnect Hosting or contact DEVPAGES support." }, 409);
     const account = await env.DB.prepare("SELECT account_id, status FROM devcloud_accounts WHERE account_id=?").bind(domain.cloudflare_account_id).first();
     if (!account || !["active","disabled"].includes(account.status)) return json({ error: "This website's hosting account is temporarily unavailable. Please contact DEVPAGES support." }, 409);
-    if (isPromoUser(user) && Date.now() < Date.parse("2027-01-16T00:00:00.000Z")) return json({ error: "Your launch promotion is active. No payment is due yet." }, 409);
+    if (purpose === "setup" && Number(domain.promo_eligible) === 1 && Date.now() < Date.parse("2027-01-15T23:00:00.000Z")) return json({ error: "Your launch promotion covers the setup fee. No setup payment is due." }, 409);
     if (purpose === "setup" && domain.status !== "pending_payment") return json({ error: "Setup payment is not due for this domain." }, 409);
     if (purpose === "renewal" && domain.status !== "suspended") return json({ error: "Renewal becomes available after the 30-day hosting period expires." }, 409);
     const amount = purpose === "setup" ? SETUP_AMOUNT : RENEWAL_AMOUNT;
